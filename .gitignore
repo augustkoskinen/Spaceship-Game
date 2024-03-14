@@ -1,0 +1,5 @@
+html/build/**
+html/war/**
+.gradle/**
+**/build/**
+.DS_STORE
