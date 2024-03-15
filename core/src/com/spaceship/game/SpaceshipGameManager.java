@@ -1,15 +1,12 @@
 package com.spaceship.game;
 
 import com.badlogic.gdx.*;
-import com.badlogic.gdx.controllers.Controller;
-import com.badlogic.gdx.controllers.Controllers;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.utils.ScreenUtils;
 
 import java.util.ArrayList;
 
@@ -40,7 +37,7 @@ public class SpaceshipGameManager extends Game {
 	@Override
 	public void create () {
 		batch = new SpriteBatch();
-		mainplayer = new Player(new Vector3(256,800,0),new Vector3(8,8,0),0);
+		mainplayer = new Player(new Vector3(256,528,0),new Vector3(8,8,0));
 		new Planet(new Vector3(0,0,0), new Vector3(8,8,0),0);
 		this.setScreen(new GameScreen(this));
 	}
@@ -82,100 +79,74 @@ public class SpaceshipGameManager extends Game {
 
 
 	public static class Player {
-		public FrameworkMO.SpriteObjectSqr sprite;
-		public FrameworkMO.AnimationSet animrw;
-		public FrameworkMO.AnimationSet animlw;
-		public Vector3 movevect;
-		public double horzmove;
-		public int movedir = 1;
-		public double lastdir = 1;
-		public int jumpcount = 5;
-		public int jumpdir = 0;
-		public double moverot = 0;
-		public int jumpdiradd = 0;
-		public int controltype;
-		public int skintype = 1;
-		public int prevskintype = 1;
-		public Controller controller;
-		public boolean chosechar = false;
-		public boolean firebutton = false;
-		public boolean jumpbutton = false;
-		public boolean firebuttonrelease = false;
-		public boolean jumpbuttonrelease = false;
-		public boolean pressright = false;
-		public boolean pressleft = false;
-		public boolean releaseright = false;
-		public boolean releaseleft = false;
-		public double deadcount = 0;
+		//basic vars
+		public FrameworkMO.SpriteObjectCirc sprite;
 		public double x = 0;
 		public double y = 0;
 		public Vector3 centerpos;
+		public int skintype = 1;
 
-		public Player(Vector3 pos, Vector3 centerpos, int type) {
+		//move
+		public Vector3 movevect;
+		public int movedir = 1;
+		public Vector3 walkvect;
+		public double moverot = 0;
+		public double lastdir = 1;
+		public double gpulldir;
+		public Vector3 gpullvect = new Vector3();
+
+		//jump
+		public int jumpcount = 5;
+		public int jumpdir = 0;
+		public int jumpdiradd = 0;
+
+		public Player(Vector3 pos, Vector3 centerpos) {
 			movevect = new Vector3();
-			controltype = 0;
-			sprite = new FrameworkMO.SpriteObjectSqr("p1body.png",pos.x,pos.y,16,16,0,0,CollisionList);
+			sprite = new FrameworkMO.SpriteObjectCirc("p1body.png", pos.x, pos.y, 8, CollisionList);
 
 			this.centerpos = centerpos;
 
-			x=pos.x+centerpos.x;
-			y=pos.y+centerpos.y;
-
-			//if (Controllers.getControllers().size == 0) controltype = 0;
-			if (controltype == 1) {
-				controller = Controllers.getControllers().get(0);
-			}
-		}
-
-		public Player(Vector3 pos, Vector3 centerpos, int type, Controller controller) {
-			movevect = new Vector3();
-			controltype = type;
-			sprite = new FrameworkMO.SpriteObjectSqr("p1body.png",pos.x,pos.y,16,16,0,0,CollisionList);
-
-			this.centerpos = centerpos;
-
-			x=pos.x+centerpos.x;
-			y=pos.y+centerpos.y;
-
-			if (Controllers.getControllers().size == 0) controltype = 0;
-			if (controltype == 1) {
-				this.controller = controller;
-			}
+			x = pos.x + centerpos.x;
+			y = pos.y + centerpos.y;
 		}
 
 		public TextureRegion updatePlayerPos() {
-			TextureRegion playertext = null;
-			int rightmove = (controltype == 0 ? Gdx.input.isKeyPressed(Input.Keys.D) : (double) Math.round((controller.getAxis(controller.getMapping().axisLeftX)) * 100d) / 100d > .25) ? 1 : 0;
-			int leftmove = (controltype == 0 ? Gdx.input.isKeyPressed(Input.Keys.A) : (double) Math.round((controller.getAxis(controller.getMapping().axisLeftX)) * 100d) / 100d < -.25) ? 1 : 0;
+			TextureRegion playertext;
+			int rightmove = Gdx.input.isKeyPressed(Input.Keys.D) ? 1 : 0;
+			int leftmove = Gdx.input.isKeyPressed(Input.Keys.A) ? 1 : 0;
 			int netmove = (rightmove - leftmove);
-			Rectangle playercol = MovementMath.DuplicateRect(sprite.collision);
+			Circle playercol = MovementMath.DuplicateCirc(sprite.collision);
 			playertext = new TextureRegion(new Texture("p" + skintype + "body.png"));
 
+			double horzmove = 0;
 			if (!pause) {
-				//SLOWSPEED = 1;
-				if ((controltype == 0 ? Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) : controller.getButton(controller.getMapping().buttonL1))) {
-					//SLOWSPEED = 0.25f;
-				}
-
 				if (netmove != 0) {
-					double movespeed = WALK_SPEED; //(controltype == 0 ? Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) : controller.getButton(controller.getMapping().buttonR1)) ? RUN_SPEED :
+					double movespeed = WALK_SPEED;
 					horzmove = netmove * (movespeed) + movevect.x;
 					horzmove = Math.max(Math.min(movevect.x + horzmove, movespeed), -movespeed) - movevect.x;
+
 					movedir = rightmove - leftmove;
 				}
 
-				//animlw.framereg = (controltype == 0 ? Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) : controller.getButton(controller.getMapping().buttonR1)) ? 0.1f : 0.2f;
-				//animrw.framereg = (controltype == 0 ? Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) : controller.getButton(controller.getMapping().buttonR1)) ? 0.1f : 0.2f;
+				gpulldir = MovementMath.pointDir(sprite.getPosition(),SpaceMath.getClosestPlanet(sprite.getPosition(),PlanetList).getPosition());
 
-				if (movevect.y < 10 * MULT_AMOUNT)
-					movevect.y -= GRAVITY * MULT_AMOUNT * Gdx.graphics.getDeltaTime() * SLOWSPEED;
+				walkvect = new Vector3((float)(Math.cos(gpulldir)*horzmove),(float)(Math.sin(gpulldir)*horzmove),0);
 
-				boolean grounded = true;//MovementMath.CheckCollisions(WORLD_MAP, playercol, 0, new Vector3(0, -1, 0), new Vector3(15, 15, 0));
-				boolean wallsliding = false;//((MovementMath.CheckCollisions(WORLD_MAP, playercol, 0, new Vector3(1, 0, 0), new Vector3(15, 15, 0)) && rightmove == 1) || (MovementMath.CheckCollisions(WORLD_MAP, playercol, 0, new Vector3(-1, 0, 0), new Vector3(15, 15, 0)) && leftmove == 1));
+				//gravity code
+				if (movevect.y < 10 * MULT_AMOUNT) {
+					double multamount = Gdx.graphics.getDeltaTime() * SLOWSPEED;
+					Vector3 gpulltemp = SpaceMath.getNetGravity(sprite.getPosition(), PlanetList);
+					gpullvect = new Vector3((float)(gpulltemp.x * multamount),(float)(gpulltemp.y * multamount),0);
+					movevect=new Vector3((float)(gpullvect.x+movevect.x),(float)(gpullvect.y+movevect.y),0);
+				}
+
+				boolean grounded = MovementMath.CheckCollisions(playercol, CollisionList, new Vector3(0, -1, 0), 7.5f)!=-1;
+				boolean wallsliding = ((MovementMath.CheckCollisions(playercol, CollisionList, new Vector3(1, 0, 0), 7.5f)!=-1 && rightmove == 1) || (MovementMath.CheckCollisions(playercol, CollisionList, new Vector3(-1, 0, 0), 7.5f)!=-1 && leftmove == 1));
+
 				if (grounded) jumpcount = 5;
 
-				if ((controltype == 0 ? Gdx.input.isKeyJustPressed(Input.Keys.F) : jumpbutton) && jumpcount > 0) {
-					int degree = MovementMath.toDegrees(controller);
+				if (Gdx.input.isKeyJustPressed(Input.Keys.F) && jumpcount > 0) {
+					int degree = MovementMath.toDegrees();
 					if (degree != -1) {
 						double movex = 0;
 						double movey = 0;
@@ -226,7 +197,7 @@ public class SpaceshipGameManager extends Game {
 								break;
 							}
 						}
-						PoofCloudList.add(new PoofCloud(degree, new Vector3((float)(sprite.x), (float)(sprite.y), 0)));
+						PoofCloudList.add(new PoofCloud(degree, new Vector3((float) (sprite.x), (float) (sprite.y), 0)));
 						jumpcount--;
 						if (jumpdiradd == 0) {
 							jumpdiradd = movedir * turnfactor;
@@ -241,53 +212,72 @@ public class SpaceshipGameManager extends Game {
 							movevect.x += movex;
 							movevect.y += movey;
 						} else {
-							movevect.x = (float)(-movedir * 4.5f * MULT_AMOUNT);
-							movevect.y += (float)(3 * MULT_AMOUNT);
+							movevect.x = (float) (-movedir * 4.5f * MULT_AMOUNT);
+							movevect.y += (float) (3 * MULT_AMOUNT);
 						}
-						movevect.y = (float)(Math.min(movevect.y, 5 * MULT_AMOUNT));
+						movevect.y = (float) (Math.min(movevect.y, 5 * MULT_AMOUNT));
 
 						lastdir = degree;
 					}
 				} else {
-					if (wallsliding) movevect.y = (float)(-1 * MULT_AMOUNT);
+					if (wallsliding) movevect.y = (float) (-1 * MULT_AMOUNT);
 				}
 
-				if (MovementMath.toDegrees(controller) != -1) lastdir = MovementMath.toDegrees(controller);
-
-				if ((controltype == 0 ? Gdx.input.isKeyJustPressed(Input.Keys.G) : firebutton)) {
-					//BulletList.add(new Bullet(lastdir + 180, new Vector3(sprite.x + 4, sprite.y + 4, 0), "p" + skintype + "bullet.png", this));
-				}
-
-				playercol = MovementMath.DuplicateRect(sprite.collision);
-
-				if (-1!=MovementMath.CheckCollisions(playercol, CollisionList, new Vector3((float)((movevect.x + horzmove) * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0, 0), new Vector3(15, 15, 0))) {
-					double sign = Math.abs(movevect.x + horzmove) / (movevect.x + horzmove);
-					while (-1==MovementMath.CheckCollisions(playercol, CollisionList, new Vector3((float)(sign), 0, 0), new Vector3(15, 15, 0))) {
-						sprite.addPosition(new Vector3((float)(sign), 0, 0));
-						playercol = MovementMath.DuplicateRect(sprite.collision);
+				if (MovementMath.toDegrees() != -1) lastdir = MovementMath.toDegrees();
+				/*
+				float dir = 45;
+					if (-1 != MovementMath.CheckCollisions(playercol, CollisionList, new Vector3((float) ((movevect.x + horzmove) * Gdx.graphics.getDeltaTime() * SLOWSPEED), (float) (Math.abs((movevect.x + horzmove) * Gdx.graphics.getDeltaTime() * SLOWSPEED)), 0), 7.5f)) {
+						//while(-1 != MovementMath.CheckCollisions(playercol, CollisionList, new Vector3((float) ((movevect.x + horzmove) * Gdx.graphics.getDeltaTime() * SLOWSPEED), (float) (Math.sin(Math.toRadians(dir))*Math.abs((movevect.x + horzmove) * Gdx.graphics.getDeltaTime() * SLOWSPEED)), 0), 7.5f)){
+						//	dir--;
+						//	if(dir==0) break;
+						//}
+						//Math.sin(Math.toRadians(dir))*
+						if(dir!=0)
+							movevect.y = (float) (Math.abs(movevect.x + horzmove));
+					} else {
+				 */
+				playercol = MovementMath.DuplicateCirc(sprite.collision);
+				if (-1 != MovementMath.CheckCollisions(playercol, CollisionList, new Vector3((float) ((movevect.x + horzmove) * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0, 0), 7.5f)) {
+					float curyadd = (float) Math.abs((movevect.x + horzmove));
+					if (-1 == MovementMath.CheckCollisions(playercol, CollisionList, new Vector3((float) ((movevect.x + horzmove) * Gdx.graphics.getDeltaTime() * SLOWSPEED), (float) (curyadd * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0), 7.5f)) {
+						while (-1 == MovementMath.CheckCollisions(playercol, CollisionList, new Vector3((float) ((movevect.x + horzmove) * Gdx.graphics.getDeltaTime() * SLOWSPEED), (float) (curyadd * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0), 7.5f)) {
+							System.out.println(curyadd);
+							curyadd--;
+							if(curyadd<=0) break;
+						}
+						curyadd++;
+						if(curyadd>0)
+							movevect.y = curyadd;
+					} else {
+						double sign = Math.abs(movevect.x + horzmove) / (movevect.x + horzmove);
+						while (-1 == MovementMath.CheckCollisions(playercol, CollisionList, new Vector3((float) (sign), 0, 0), 7.5f)) {
+							sprite.addPosition(new Vector3((float) (sign), 0, 0));
+							playercol = MovementMath.DuplicateCirc(sprite.collision);
+						}
+						movevect.x = 0;
+						horzmove = 0;
 					}
-					movevect.x = 0;
-					horzmove = 0;
 				}
-				sprite.addPosition(new Vector3((float)((movevect.x + horzmove) * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0, 0));
 
-				playercol = MovementMath.DuplicateRect(sprite.collision);
-				if (-1!=MovementMath.CheckCollisions(playercol, CollisionList, new Vector3(0, (float)((movevect.y) * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0), new Vector3(15, 15, 0))) {
+				sprite.addPosition(new Vector3((float) ((movevect.x + horzmove) * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0, 0));
+
+				playercol = MovementMath.DuplicateCirc(sprite.collision);
+				if (-1 != MovementMath.CheckCollisions(playercol, CollisionList, new Vector3(0, (float) ((movevect.y) * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0), 7.5f)) {
 					double sign = Math.abs(movevect.y) / movevect.y;
-					while (-1==MovementMath.CheckCollisions(playercol, CollisionList, new Vector3(0, (float)(sign), 0), new Vector3(15, 15, 0))) {
-						sprite.addPosition(new Vector3(0, (float)(sign), 0));
-						playercol = MovementMath.DuplicateRect(sprite.collision);
+					while (-1 == MovementMath.CheckCollisions(playercol, CollisionList, new Vector3(0, (float) (sign), 0), 7.5f)) {
+						sprite.addPosition(new Vector3(0, (float) (sign), 0));
+						playercol = MovementMath.DuplicateCirc(sprite.collision);
 					}
 					movevect.y = 0;
 				}
-				sprite.addPosition(new Vector3(0, (float)((movevect.y) * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0));
+				sprite.addPosition(new Vector3(0, (float) ((movevect.y) * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0));
 
 				moverot -= ((movevect.x + horzmove) * Gdx.graphics.getDeltaTime() * SLOWSPEED) * 5;
 				movevect.x *= .88f;
 				horzmove *= (grounded ? .5f : .88f);
 
-				x=sprite.x+centerpos.x;
-				y=sprite.y+centerpos.y;
+				x = sprite.x;
+				y = sprite.y;
 			}
 
 			sprite.depth = y;
@@ -301,18 +291,20 @@ public class SpaceshipGameManager extends Game {
 			return playertext;
 		}
 
-		public void setPosition(Vector3 newpos){
-			sprite.setPosition(newpos.x,newpos.y);
-			x = newpos.x+centerpos.x;
-			y = newpos.y+centerpos.y;
+		public void setPosition(Vector3 newpos) {
+			sprite.setPosition(newpos.x, newpos.y);
+			x = newpos.x;
+			y = newpos.y;
 		}
-		public void addPosition(Vector3 addpos){
+
+		public void addPosition(Vector3 addpos) {
 			sprite.addPosition(addpos);
-			x = sprite.x+centerpos.x;
-			y = sprite.y+centerpos.y;
+			x = sprite.x;
+			y = sprite.y;
 		}
-		public Vector3 getPosition(){
-			return new Vector3((float) x,(float) y,0);
+
+		public Vector3 getPosition() {
+			return new Vector3((float) x, (float) y, 0);
 		}
 
 		public FrameworkMO.TextureSet getEyeText() {
@@ -323,42 +315,6 @@ public class SpaceshipGameManager extends Game {
 
 			return new FrameworkMO.TextureSet(new TextureRegion(new Texture("eyes.png")), xpos, ypos, 10000, (double) Math.toRadians(lastdir + 90));
 		}
-
-		public void updateControls() {
-			if (controltype == 1) {
-				firebutton = false;
-				jumpbutton = false;
-
-				if (firebuttonrelease && controller.getButton(controller.getMapping().buttonA) && !firebutton)
-					firebutton = true;
-				firebuttonrelease = !controller.getButton(controller.getMapping().buttonA);
-
-				if (jumpbuttonrelease && controller.getButton(controller.getMapping().buttonB) && !jumpbutton)
-					jumpbutton = true;
-				jumpbuttonrelease = !controller.getButton(controller.getMapping().buttonB);
-
-
-				pressright = false;
-				boolean rdown = (double) Math.round((controller.getAxis(controller.getMapping().axisLeftX)) * 100d) / 100d > .45;
-
-				if (rdown && releaseright) {
-					pressright = true;
-				}
-
-				if (!rdown) releaseright = true;
-				else releaseright = false;
-
-				pressleft = false;
-				boolean ldown = (double) Math.round((controller.getAxis(controller.getMapping().axisLeftX)) * 100d) / 100d < -.45;
-
-				if (ldown && releaseleft) {
-					pressleft = true;
-				}
-
-				if (!ldown) releaseleft = true;
-				else releaseleft = false;
-			}
-		}
 	}
 
 	public static class Planet {
@@ -366,15 +322,19 @@ public class SpaceshipGameManager extends Game {
 		public Vector3 movevect;
 		public double x = 0;
 		public double y = 0;
+		public double radius = 0;
 		public Vector3 centerpos;
 		public int type = 0;
+		public double mass = 0;
 
 		public Planet(Vector3 pos, Vector3 centerpos, int type) {
 			movevect = new Vector3();
 			type = (int)(Math.random()*3);
-			sprite = new FrameworkMO.SpriteObjectCirc("planet1.png",pos.x,pos.y,512,CollisionList);
+			radius = 256;
+			sprite = new FrameworkMO.SpriteObjectCirc("planet1.png",pos.x,pos.y,256, CollisionList);
 
-			this.centerpos = centerpos;
+			this.centerpos = new Vector3((float)(centerpos.x+radius),(float)(centerpos.y+radius),0);
+			this.mass = 1000000;
 			x=pos.x+centerpos.x;
 			y=pos.y+centerpos.y;
 

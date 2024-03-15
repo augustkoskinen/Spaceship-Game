@@ -6,7 +6,6 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Circle;
-import com.badlogic.gdx.controllers.Controller;
 
 import java.util.ArrayList;
 
@@ -61,14 +60,28 @@ public class MovementMath extends ApplicationAdapter {
         for(int i = 0; i< collist.size();i++) {
             if (collist.get(i) instanceof Circle) {
                 Circle curcirc = (Circle) collist.get(i);
-                if (overlaps(colbox, DuplicateCirc(curcirc.x, curcirc.y, curcirc.radius))) {
-                    System.out.println("here");
+                if (overlaps(DuplicateRect((colbox.x+offset.x+(16-bounds.x)/2),(colbox.y+offset.y+(16-bounds.y)/2),bounds.x,bounds.y), curcirc)) {
                     return i;
                 }
             } else if (collist.get(i) instanceof Rectangle) {
                 Rectangle currec = (Rectangle) collist.get(i);
-                if (!colbox.equals(currec) && overlaps(colbox, DuplicateRect(currec.x, currec.y, currec.width, currec.height))) {
-                    System.out.println("here2");
+                if (!colbox.equals(currec) && overlaps(DuplicateRect((colbox.x+offset.x+(16-bounds.x)/2),(colbox.y+offset.y+(16-bounds.y)/2),bounds.x,bounds.y), currec)) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    static public int CheckCollisions(Circle colcirc, ArrayList collist, Vector3 offset, float colrad){
+        for(int i = 0; i< collist.size();i++) {
+            if (collist.get(i) instanceof Circle) {
+                Circle curcirc = (Circle) collist.get(i);
+                if (!colcirc.equals(curcirc) && overlaps(DuplicateCirc(colcirc.x+offset.x-colcirc.radius+(colcirc.radius-colrad),colcirc.y+offset.y-colcirc.radius+(colcirc.radius-colrad),colrad), curcirc)) {//+(colcirc.radius-colrad)
+                    return i;
+                }
+            } else if (collist.get(i) instanceof Rectangle) {
+                Rectangle currec = (Rectangle) collist.get(i);
+                if (overlaps(currec,DuplicateCirc(colcirc.x+offset.x-colcirc.radius+(colcirc.radius-colrad),colcirc.y+offset.y-colcirc.radius+(colcirc.radius-colrad),colrad))) {
                     return i;
                 }
             }
@@ -104,70 +117,38 @@ public class MovementMath extends ApplicationAdapter {
     static public Circle DuplicateCirc(float x, float y, float rad){
         return new Circle(x,y,rad);
     }
-    static public int toDegrees(Controller controller) {
-        if(controller == null) {
-            if (Gdx.input.isKeyPressed(Input.Keys.W) && Gdx.input.isKeyPressed(Input.Keys.D)) {
-                return 315;
-            }
-            if (Gdx.input.isKeyPressed(Input.Keys.A) && Gdx.input.isKeyPressed(Input.Keys.W)) {
-                return 45;
-            }
-            if (Gdx.input.isKeyPressed(Input.Keys.S) && Gdx.input.isKeyPressed(Input.Keys.A)) {
-                return 135;
-            }
-            if (Gdx.input.isKeyPressed(Input.Keys.D) && Gdx.input.isKeyPressed(Input.Keys.S)) {
-                return 225;
-            }
-            if (Gdx.input.isKeyPressed(Input.Keys.W)) {
-                return 0;
-            }
-            if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-                return 90;
-            }
-            if (Gdx.input.isKeyPressed(Input.Keys.S)) {
-                return 180;
-            }
-            if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-                return 270;
-            }
-        } else {
-            boolean rightmove = ((double) Math.round((controller.getAxis(controller.getMapping().axisLeftX)) * 100d) / 100d > .4);
-            boolean leftmove = ((double) Math.round((controller.getAxis(controller.getMapping().axisLeftX)) * 100d) / 100d < -.4);
-            boolean upmove = ((double) Math.round((controller.getAxis(controller.getMapping().axisLeftY)) * 100d) / 100d < -.4);
-            boolean downmove = ((double) Math.round((controller.getAxis(controller.getMapping().axisLeftY)) * 100d) / 100d > .4);
-
-            if (upmove && rightmove) {
-                return 315;
-            }
-            if (leftmove && upmove) {
-                return 45;
-            }
-            if (downmove && leftmove) {
-                return 135;
-            }
-            if (rightmove && downmove) {
-                return 225;
-            }
-            if (upmove) {
-                return 0;
-            }
-            if (leftmove) {
-                return 90;
-            }
-            if (downmove) {
-                return 180;
-            }
-            if (rightmove) {
-                return 270;
-            }
+    static public int toDegrees() {
+        if (Gdx.input.isKeyPressed(Input.Keys.W) && Gdx.input.isKeyPressed(Input.Keys.D)) {
+            return 315;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.A) && Gdx.input.isKeyPressed(Input.Keys.W)) {
+            return 45;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.S) && Gdx.input.isKeyPressed(Input.Keys.A)) {
+            return 135;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.D) && Gdx.input.isKeyPressed(Input.Keys.S)) {
+            return 225;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.W)) {
+            return 0;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.A)) {
+            return 90;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.S)) {
+            return 180;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.D)) {
+            return 270;
         }
         return -1;
     }
 
     //checks an overlap between a circle and a rectangle
     static public boolean overlaps(Rectangle rect, Circle circ){
-        double circDisX = Math.abs(circ.x - (rect.x+rect.width/2));
-        double circDisY = Math.abs(circ.y - (rect.y+rect.height/2));
+        double circDisX = Math.abs((circ.x+circ.radius) - (rect.x));
+        double circDisY = Math.abs((circ.y+circ.radius) - (rect.y));
 
         if (circDisX > (rect.width/2 + circ.radius)) { return false; }
         if (circDisY > (rect.height/2 + circ.radius)) { return false; }
@@ -175,14 +156,14 @@ public class MovementMath extends ApplicationAdapter {
         if (circDisX <= (rect.width/2)) { return true; }
         if (circDisY <= (rect.height/2)) { return true; }
 
-        double cornerDistance_sq = Math.pow(circDisX - rect.width/2,2) + Math.pow(circDisY - rect.height/2,2);
+        double cornerDistance = Math.sqrt(Math.pow(circDisX - rect.width/2,2) + Math.pow(circDisY - rect.height/2,2));
 
-        return (cornerDistance_sq <= Math.pow(circ.radius,2));
+        return (cornerDistance <= circ.radius);
     }
 
     //checks an overlap between 2 circles
     static public boolean overlaps(Circle circ, Circle circ2){
-        return (pointDis(new Vector3(circ.x+circ.radius, circ.y+circ.radius, 0),new Vector3(circ2.x+circ2.radius, circ2.y+circ2.radius, 0))<circ.radius+circ2.radius);
+        return (pointDis(new Vector3(circ.x+circ.radius, circ.y+circ.radius, 0),new Vector3(circ2.x+circ2.radius, circ2.y+circ2.radius, 0))<=circ.radius+circ2.radius);
     }
     static public boolean overlaps (Rectangle r1, Rectangle r2) {
         return !(r1.x + r1.width < r2.x || r1.y + r1.height < r2.y || r1.x > r2.x + r2.width || r1.y > r2.y + r2.height);

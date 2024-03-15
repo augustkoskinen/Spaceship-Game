@@ -107,8 +107,8 @@ public class FrameworkMO {
 
             collision.x = (float) xpos;
             collision.y = (float) ypos;
-            x = xpos;
-            y = ypos;
+            x = xpos+radius;
+            y = ypos+radius;
             radius = colrad;
 
             if (collist!=null) {
@@ -118,19 +118,19 @@ public class FrameworkMO {
         }
 
         public void setPosition(double xpos, double ypos) {
-            collision.setPosition((float) (xpos ), (float) (ypos));
-            x = xpos;
-            y = ypos;
+            collision.setPosition((float) (xpos), (float) (ypos));
+            x = xpos+radius;
+            y = ypos+radius;
         }
 
         public Vector3 getPosition() {
-            return new Vector3((float) x, (float) y, 0);
+            return new Vector3((float)(collision.x+radius), (float)(collision.y+radius), 0);
         }
 
         public void addPosition(Vector3 movevect) {
-            collision.setPosition((float) (x + movevect.x ), (float) (y + movevect.y));
-            x = x + movevect.x+radius;
-            y = y + movevect.y+radius;
+            collision.setPosition(collision.x + movevect.x, collision.y + movevect.y);
+            x += movevect.x;
+            y += movevect.y;
         }
 
         public void changeTexture(String texturepath) {

@@ -48,16 +48,15 @@ public class GameScreen implements Screen {
         batch.setProjectionMatrix(cam.combined);
 
         batch.begin();
-        player.updateControls();
+        for(int i = 0; i<manager.PlanetList.size();i++) {
+            FrameworkMO.TextureSet text = new FrameworkMO.TextureSet(manager.PlanetList.get(i).updatePos(),manager.PlanetList.get(i).x,manager.PlanetList.get(i).y,manager.PlanetList.get(i).sprite.depth);
+            batch.draw(text.texture,(float)(text.x),(float)(text.y));
+        }
+
         TextureRegion playertext = player.updatePlayerPos();
         batch.draw(playertext,(float)(player.sprite.x), (float)(player.sprite.y),playertext.getRegionWidth()/2,playertext.getRegionHeight()/2,playertext.getRegionWidth(),playertext.getRegionHeight(),1,1,(float) player.moverot);
         FrameworkMO.TextureSet eyetext = player.getEyeText();
         batch.draw(eyetext.texture,(float)(eyetext.x),(float)(eyetext.y),eyetext.texture.getRegionWidth()/2,eyetext.texture.getRegionHeight()/2,eyetext.texture.getRegionWidth(),eyetext.texture.getRegionHeight(),1,1,(float)Math.toDegrees(eyetext.rotation));
-
-        for(int i = 0; i<manager.PlanetList.size();i++) {
-            FrameworkMO.TextureSet text = new FrameworkMO.TextureSet(manager.PlanetList.get(i).updatePos(),manager.PlanetList.get(i).x,manager.PlanetList.get(i).y,manager.PlanetList.get(i).sprite.depth);
-            batch.draw(text.texture,(float)(text.x),(float)(text.y),text.texture.getRegionWidth()/2,text.texture.getRegionHeight()/2,text.texture.getRegionWidth(),text.texture.getRegionHeight(),1,1,(float)Math.toDegrees(text.rotation));
-        }
 
         for(int i = 0; i<manager.PoofCloudList.size();i++) {
             FrameworkMO.TextureSet text = manager.PoofCloudList.get(i).updateTime();
