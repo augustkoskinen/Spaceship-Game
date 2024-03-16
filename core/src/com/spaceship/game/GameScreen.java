@@ -15,6 +15,8 @@ import java.util.ArrayList;
 public class GameScreen implements Screen {
     //320, 160 spawn
     private OrthographicCamera cam;
+    public double camrot = 0;
+    public double prevrot = 0;
     private SpaceshipGameManager manager;
     private SpriteBatch batch;
     private SpaceshipGameManager.Player player;
@@ -31,6 +33,7 @@ public class GameScreen implements Screen {
         cam = new OrthographicCamera();
         cam.setToOrtho(false, (manager.WORLD_WIDTH*manager.TILE_WIDTH), (manager.WORLD_HEIGHT*manager.TILE_WIDTH));
         cam.position.set(new Vector3((float)(player.x), (float)(player.y), 0));
+        camrot = MovementMath.getCameraAngle(cam);
     }
 
     @Override
@@ -42,21 +45,32 @@ public class GameScreen implements Screen {
         double camdir = MovementMath.pointDir(cam.position, new Vector3((float) (player.x), (float) (player.y), 0));
         Vector3 campos = MovementMath.lengthDir(camdir, camdis);
         cam.position.set(cam.position.x + campos.x * .05f, cam.position.y + campos.y * .05f, 0);
-        cam.zoom = 0.4f;
+        cam.zoom = 0.75f;
+
+        if(prevrot<-90&&Math.toDegrees(player.gpulldir)>90){
+            camrot = (camrot+360+Math.toDegrees(player.gpulldir))*0.5;
+        } else if ((prevrot>90&&Math.toDegrees(player.gpulldir)<-90)) {
+            camrot = (camrot-360+Math.toDegrees(player.gpulldir))*0.5;
+        } else {
+            camrot = (camrot+Math.toDegrees(player.gpulldir))*0.5;
+        }
+        prevrot = Math.toDegrees(player.gpulldir);
+
+        MovementMath.setCamPos(cam, camrot);
 
         cam.update();
         batch.setProjectionMatrix(cam.combined);
 
         batch.begin();
         for(int i = 0; i<manager.PlanetList.size();i++) {
-            FrameworkMO.TextureSet text = new FrameworkMO.TextureSet(manager.PlanetList.get(i).updatePos(),manager.PlanetList.get(i).x,manager.PlanetList.get(i).y,manager.PlanetList.get(i).sprite.depth);
+            FrameworkMO.TextureSet text = new FrameworkMO.TextureSet(manager.PlanetList.get(i).updatePos(),manager.PlanetList.get(i).sprite.x,manager.PlanetList.get(i).sprite.y,manager.PlanetList.get(i).sprite.depth);
             batch.draw(text.texture,(float)(text.x),(float)(text.y));
         }
 
         TextureRegion playertext = player.updatePlayerPos();
-        batch.draw(playertext,(float)(player.sprite.x), (float)(player.sprite.y),playertext.getRegionWidth()/2,playertext.getRegionHeight()/2,playertext.getRegionWidth(),playertext.getRegionHeight(),1,1,(float) player.moverot);
+        batch.draw(playertext,(float)(player.sprite.x-player.sprite.radius), (float)(player.sprite.y-player.sprite.radius),playertext.getRegionWidth()/2,playertext.getRegionHeight()/2,playertext.getRegionWidth(),playertext.getRegionHeight(),1,1,(float) player.moverot);
         FrameworkMO.TextureSet eyetext = player.getEyeText();
-        batch.draw(eyetext.texture,(float)(eyetext.x),(float)(eyetext.y),eyetext.texture.getRegionWidth()/2,eyetext.texture.getRegionHeight()/2,eyetext.texture.getRegionWidth(),eyetext.texture.getRegionHeight(),1,1,(float)Math.toDegrees(eyetext.rotation));
+        batch.draw(eyetext.texture,(float)(eyetext.x-player.sprite.radius),(float)(eyetext.y-player.sprite.radius),eyetext.texture.getRegionWidth()/2,eyetext.texture.getRegionHeight()/2,eyetext.texture.getRegionWidth(),eyetext.texture.getRegionHeight(),1,1,(float)Math.toDegrees(eyetext.rotation));
 
         for(int i = 0; i<manager.PoofCloudList.size();i++) {
             FrameworkMO.TextureSet text = manager.PoofCloudList.get(i).updateTime();

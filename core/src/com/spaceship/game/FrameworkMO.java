@@ -124,13 +124,18 @@ public class FrameworkMO {
         }
 
         public Vector3 getPosition() {
-            return new Vector3((float)(collision.x+radius), (float)(collision.y+radius), 0);
+            return new Vector3((float)(x), (float)(y), 0);
         }
 
         public void addPosition(Vector3 movevect) {
             collision.setPosition(collision.x + movevect.x, collision.y + movevect.y);
             x += movevect.x;
             y += movevect.y;
+        }
+        public void addPosition(double x, double y) {
+            collision.setPosition(collision.x + (float) x, collision.y + (float) y);
+            this.x += x;
+            this.y += y;
         }
 
         public void changeTexture(String texturepath) {

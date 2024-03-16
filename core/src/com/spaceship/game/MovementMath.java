@@ -3,6 +3,7 @@ package com.spaceship.game;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Circle;
@@ -234,6 +235,22 @@ public class MovementMath extends ApplicationAdapter {
 
         return furthestdist;
     }
+
+    public static Vector3 addVect(Vector3 v1, Vector3 v2){
+        return new Vector3(v1.x+v2.x,v1.y+v2.y,v1.z+v2.z);
+    }
+    public static Vector3 addVect(Vector3 v1, Vector3 v2, Vector3 v3){
+        return new Vector3(v1.x+v2.x+v3.x,v1.y+v2.y+v3.y,v1.z+v2.z+v3.z);
+    }
+
+    public static float getCameraAngle(OrthographicCamera cam) {
+        return ((float) Math.toDegrees(-Math.atan2(cam.up.x, cam.up.y))) + 180;
+    }
+
+    public static void setCamPos(OrthographicCamera cam, double pos){
+        cam.rotate((MovementMath.getCameraAngle(cam) - (float)pos)+90);
+    }
+
     /*
     static boolean polygonIntersection(Polygon a, Polygon b)
     {
