@@ -5,7 +5,7 @@ import com.badlogic.gdx.math.Vector3;
 import java.util.ArrayList;
 
 public class SpaceMath {
-    private static final double GRAVITATIONAL_CONSTANT = 1e9;//6.674e-11
+    private static final double GRAVITATIONAL_CONSTANT = 1e13;//6.674e-11
     public static double getGravityForce(double m2, double d){
         return ((GRAVITATIONAL_CONSTANT*m2)/Math.pow(d,5));
     }
@@ -27,13 +27,13 @@ public class SpaceMath {
     }
 
     public static SpaceshipGameManager.Planet getClosestPlanet(Vector3 ppos, ArrayList<SpaceshipGameManager.Planet> plist){
-        double dis = Integer.MAX_VALUE;
+        double maxmag = 0;
         int pi = -1;
         for(int i = 0; i<plist.size();i++) {
-            double curdis = MovementMath.pointDis(plist.get(i).getPosition(),ppos);
-            if(curdis<dis) {
+            double curmag = getGravityForce(plist.get(i).mass,MovementMath.pointDis(plist.get(i).getPosition(),ppos));
+            if(curmag>maxmag) {
                 pi = i;
-                dis = curdis;
+                maxmag = curmag;
             }
         }
         return plist.get(pi);

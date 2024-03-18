@@ -38,13 +38,14 @@ public class FrameworkMO {
 
     //class for sprites w/ a hitbox
     public static class SpriteObjectSqr {
-        Texture texture;
-        Rectangle collision = new Rectangle();
-        double x = 0;
-        double y = 0;
-        double depth = 0;
-        double coloffx = 0;
-        double coloffy = 0;
+        public Texture texture;
+        public Rectangle collision = new Rectangle();
+        public double x = 0;
+        public double y = 0;
+        public double depth = 0;
+        public double coloffx = 0;
+        public double coloffy = 0;
+        public double rotation = 0;
 
         public SpriteObjectSqr(String texturepath, double xpos, double ypos, double colwidth, double colheight, double coladdx, double coladdy, ArrayList collist) {
             if (texturepath.isEmpty()) {
@@ -55,6 +56,29 @@ public class FrameworkMO {
             x = xpos;
             y = ypos;
             this.depth = ypos;
+            collision.x = (float) xpos;
+            collision.y = (float) ypos;
+            if (collist!=null) {
+                collision.height = (float) colheight;
+                collision.width = (float) colwidth;
+                collision.x += coladdx;
+                collision.y += coladdy;
+                coloffx = coladdx;
+                coloffy = coladdy;
+                collist.add(collision);
+            }
+        }
+
+        public SpriteObjectSqr(String texturepath, double xpos, double ypos, double colwidth, double colheight, double coladdx, double coladdy, double rot, ArrayList collist) {
+            if (texturepath.isEmpty()) {
+                texture = new Texture(Gdx.files.internal("empty.png"));
+            } else {
+                texture = new Texture(texturepath);
+            }
+            x = xpos;
+            y = ypos;
+            this.depth = ypos;
+            rotation = rot;
             collision.x = (float) xpos;
             collision.y = (float) ypos;
             if (collist!=null) {
@@ -86,6 +110,27 @@ public class FrameworkMO {
 
         public void changeTexture(String texturepath) {
             texture = new Texture(Gdx.files.internal(texturepath));
+        }
+    }
+
+    //class for sprites w/ a hitbox
+    public static class DestroyableObject extends SpriteObjectSqr {
+        public int health = 0;
+        public DestroyableObject(String texturepath, double xpos, double ypos, double colwidth, double colheight, double coladdx, double coladdy, double rot, ArrayList collist) {
+            super(texturepath, xpos, ypos, colwidth, colheight, coladdx, coladdy, rot, collist);
+            health = 5;
+        }
+        public boolean checkDestroyable(SpaceshipGameManager.Player player, ArrayList<ParticleSet> ParticleList, ArrayList<SpaceshipGameManager.Planet> PlanetList) {
+            if(MovementMath.pointDis(player.sprite.getPosition(),
+                MovementMath.addVect(getPosition(),MovementMath.lengthDir(Math.toRadians(rotation+90-45), 22.627416998))
+                )<16&& player.justclicked) {
+                player.justclicked = false;
+                health--;
+                Vector3 placepos = MovementMath.lengthDir(Math.toRadians(rotation+63.4349488229), 35.77708764);
+                ParticleList.add(new FrameworkMO.ParticleSet(0,MovementMath.addVect(getPosition(),new Vector3(placepos.x,placepos.y,0)),PlanetList));
+            }
+
+            return (health>0);
         }
     }
 
@@ -140,6 +185,74 @@ public class FrameworkMO {
 
         public void changeTexture(String texturepath) {
             texture = new Texture(Gdx.files.internal(texturepath));
+        }
+    }
+
+    public static class ParticleSet {
+        ArrayList<Particle> ParticleList = new ArrayList<>();
+        public ParticleSet(int type, Vector3 pos, ArrayList<SpaceshipGameManager.Planet> planetlist) {
+            switch (type) {
+                case 0 : {
+                    int pcount = (int)(Math.random()*5)+30;
+                    for (int i = 0; i< pcount; i++) {
+                        ParticleList.add(new Particle(type, pos, planetlist));
+                    }
+                    break;
+                }
+            }
+        }
+        public ArrayList<TextureSet> getParticles() {
+            ArrayList<TextureSet> textlist = new ArrayList<>();
+            for(int i = 0; i < ParticleList.size(); i++) {
+                if(ParticleList.get(i).checkPos()) {
+                    textlist.add(new TextureSet(ParticleList.get(i).sprite.getAnim(),ParticleList.get(i).position.x,ParticleList.get(i).position.y,0,ParticleList.get(i).gravitypull+90));
+                } else {
+                    ParticleList.remove(i);
+                    i--;
+                }
+            }
+            if(ParticleList.isEmpty())
+                return null;
+            return textlist;
+        }
+    }
+    public static class Particle {
+        public AnimationSet sprite = null;
+        double maxlife = 0;
+        double life = 0;
+        int movesign = 1;
+        Vector3 position = new Vector3();
+        Vector3 velocity = new Vector3();
+        double gravitypull = 0;
+        public Particle(int type, Vector3 pos, ArrayList<SpaceshipGameManager.Planet> planetlist) {
+            switch (type) {
+                case 0 : {
+                    int pcount = (int)(Math.random()*10);
+                    for (int i = 0; i< pcount; i++) {
+                        sprite = new AnimationSet("treeparticles.png",5,1,0.1f);
+                        sprite.time = ((int)(Math.random()*4)+1)*0.1f;
+                        life = Math.random()*.3;
+                        position = pos;
+                        gravitypull = Math.toDegrees(MovementMath.pointDir(pos,SpaceMath.getClosestPlanet(pos,planetlist).getPosition()));
+                        velocity = MovementMath.addVect(MovementMath.lengthDir(Math.toRadians(gravitypull+movesign*90),(Math.random()*1.8)+0.2f),MovementMath.lengthDir(Math.toRadians(gravitypull+180),(Math.random()*80)+0.5f));
+                        movesign = (int)(Math.random()*2) == 0 ? -1 : 1;
+                        maxlife = 0.7;
+                    }
+                    break;
+                }
+            }
+        }
+        public boolean checkPos() {
+            life += Gdx.graphics.getDeltaTime();
+            if(maxlife<=life) {
+                return false;
+            } else {
+                position = MovementMath.addVect(new Vector3(velocity.x*Gdx.graphics.getDeltaTime(),velocity.y*Gdx.graphics.getDeltaTime(),0),position);
+                Vector3 addside = MovementMath.lengthDir(Math.toRadians(gravitypull+movesign*-1*90),1);
+                Vector3 addup = MovementMath.lengthDir(Math.toRadians(gravitypull),3);
+                velocity = MovementMath.addVect(velocity,addside,addup);
+            }
+            return true;
         }
     }
 
@@ -236,6 +349,14 @@ public class FrameworkMO {
             y = ypos;
             rotation = 0;
             this.depth = depth;
+        }
+
+        public TextureSet(TextureRegion text, double xpos, double ypos) {
+            texture = text;
+            x = xpos;
+            y = ypos;
+            rotation = 0;
+            this.depth = 0;
         }
 
         public TextureSet(TextureRegion text, double xpos, double ypos, double depth, double rot) {

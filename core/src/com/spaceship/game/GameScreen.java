@@ -62,9 +62,56 @@ public class GameScreen implements Screen {
         batch.setProjectionMatrix(cam.combined);
 
         batch.begin();
-        for(int i = 0; i<manager.PlanetList.size();i++) {
-            FrameworkMO.TextureSet text = new FrameworkMO.TextureSet(manager.PlanetList.get(i).updatePos(),manager.PlanetList.get(i).sprite.x,manager.PlanetList.get(i).sprite.y,manager.PlanetList.get(i).sprite.depth);
-            batch.draw(text.texture,(float)(text.x),(float)(text.y));
+
+        for(SpaceshipGameManager.Planet planet : manager.PlanetList) {
+            for(int i = 0; i<planet.TreeList.size();i++) {
+                Texture text = planet.TreeList.get(i).texture;
+                boolean alive = planet.TreeList.get(i).checkDestroyable(player,manager.ParticleList,manager.PlanetList);
+                if(alive) {
+                    batch.draw(new TextureRegion(text),(float)(planet.TreeList.get(i).x),(float)(planet.TreeList.get(i).y),0,0,text.getWidth(),text.getHeight(),1,1,(float)(planet.TreeList.get(i).rotation));
+                } else {
+                    planet.TreeList.remove(i);
+                    i--;
+                }
+            }
+
+            FrameworkMO.TextureSet text = new FrameworkMO.TextureSet(planet.updatePos(),planet.sprite.x,planet.sprite.y,planet.sprite.depth);
+            batch.draw(
+                    text.texture,
+                    (float)(text.x),
+                    (float)(text.y),
+                    planet.sprite.texture.getWidth(),
+                    planet.sprite.texture.getHeight(),
+                    planet.sprite.texture.getWidth(),
+                    planet.sprite.texture.getHeight(),
+                    1,
+                    1,
+                    0
+            );
+        }
+
+        for(int i = 0; i<manager.ParticleList.size();i++) {
+            ArrayList<FrameworkMO.TextureSet> textlist = manager.ParticleList.get(i).getParticles();
+            if(textlist==null) {
+                manager.ParticleList.remove(i);
+                i--;
+            } else {
+                for(FrameworkMO.TextureSet textset : textlist) {
+                    //System.out.println(textset.x);
+                    batch.draw(
+                        textset.texture,
+                        (float) (textset.x),
+                        (float) (textset.y),
+                        textset.texture.getRegionWidth(),
+                        textset.texture.getRegionHeight(),
+                        textset.texture.getRegionWidth(),
+                        textset.texture.getRegionHeight(),
+                        1,
+                        1,
+                        (float)textset.rotation
+                    );
+                }
+            }
         }
 
         TextureRegion playertext = player.updatePlayerPos();

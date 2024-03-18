@@ -11,42 +11,50 @@ import com.badlogic.gdx.math.Vector3;
 import java.util.ArrayList;
 
 public class SpaceshipGameManager extends Game {
+	//needed vars
 	SpriteBatch batch;
 	public static boolean pause;
 	public String launcher;
+	public static Player mainplayer;
+
+	//consts
 	public static final int TILE_WIDTH = 16;
 	public static final int WORLD_WIDTH = 46;
 	public static final int WORLD_HEIGHT = 26;
 	public static final double MULT_AMOUNT = 55;
-	public static double WIND_WIDTH = 1024;
-	public static double WIND_HEIGHT = 576;
-	public static double CHANGE_RATIO = 1;
 	public static double SLOWSPEED = 1;
-	public static final double GRAVITY = 0.25f*MULT_AMOUNT;
 	public static final double WALK_SPEED = 1*MULT_AMOUNT;
 	public static final double JUMP_SPEED = 8f*MULT_AMOUNT;
-	public static Player mainplayer;
+
+	//lists
 	static ArrayList<PoofCloud> PoofCloudList = new ArrayList<>();
 	static ArrayList<Planet> PlanetList = new ArrayList<>();
+	static ArrayList<FrameworkMO.SpriteObjectSqr> SprObjSqrList = new ArrayList<>();
+	static ArrayList<FrameworkMO.SpriteObjectCirc> SprObjCircList = new ArrayList<>();
+	static ArrayList<FrameworkMO.ParticleSet> ParticleList = new ArrayList<>();
 	static ArrayList CollisionList = new ArrayList<>();
+
+	//shake vars
 	public static boolean shake = false;
 	public static double shaketime = 0.7f;
 	public static Vector3 loadjiggle = new Vector3();
+
+
 	public SpaceshipGameManager(String launcher){ this.launcher = launcher; }
 
 	@Override
 	public void create () {
 		batch = new SpriteBatch();
-		mainplayer = new Player(new Vector3(512,512,0),new Vector3(8,8,0));
-		new Planet(new Vector3(0,0,0),0);
-		new Planet(new Vector3(448,448,0),0);
+		mainplayer = new Player(new Vector3(512,1032,0));
+		//new Planet(new Vector3(0,0,0),0);
+		new Planet(new Vector3(0,0,0),1);
+		//ParticleList.add(new FrameworkMO.ParticleSet(0,mainplayer.getPosition(),PlanetList));
+
 		this.setScreen(new GameScreen(this));
 	}
 
 	@Override
-	public void render () {
-		super.render();
-	}
+	public void render () { super.render(); }
 	
 	@Override
 	public void dispose () {
@@ -102,16 +110,21 @@ public class SpaceshipGameManager extends Game {
 		public int jumpdir = 0;
 		public int jumpdiradd = 0;
 
-		public Player(Vector3 pos, Vector3 centerpos) {
+		//interaction vars
+		public boolean justclicked = false;
+
+		public Player(Vector3 pos) {
 			sprite = new FrameworkMO.SpriteObjectCirc("p1body.png", pos.x, pos.y, 8, CollisionList);
 
-			this.centerpos = centerpos;
+			this.centerpos = new Vector3(8,8,0);
 
-			x = pos.x + centerpos.x;
-			y = pos.y + centerpos.y;
+			x = pos.x + 8;
+			y = pos.y + 8;
 		}
 
 		public TextureRegion updatePlayerPos() {
+			justclicked = Gdx.input.justTouched();
+
 			//setting up vars
 			TextureRegion playertext;
 			int rightmove = Gdx.input.isKeyPressed(Input.Keys.D) ? 1 : 0;
@@ -252,6 +265,7 @@ public class SpaceshipGameManager extends Game {
 	}
 
 	public static class Planet {
+		static ArrayList<FrameworkMO.DestroyableObject> TreeList = new ArrayList<>();
 		public FrameworkMO.SpriteObjectCirc sprite;
 		public Vector3 movevect;
 		public double x = 0;
@@ -262,13 +276,32 @@ public class SpaceshipGameManager extends Game {
 
 		public Planet(Vector3 pos, int type) {
 			movevect = new Vector3();
-			type = (int)(Math.random()*3);
-			radius = 256;
-			this.mass = 1000000;
-			sprite = new FrameworkMO.SpriteObjectCirc("planet1.png",pos.x,pos.y,256, CollisionList);
+			this.type = type;
+
+			switch (type) {
+				case 0 : {
+					radius = 256;
+					this.mass = 100;
+					break;
+				}
+				case 1: {
+					radius = 512;
+					this.mass = 1950;
+					break;
+				}
+			}
+
+			sprite = new FrameworkMO.SpriteObjectCirc("planet"+type+".png", pos.x, pos.y, radius, CollisionList);
 
 			x=sprite.x+radius;
 			y=sprite.y+radius;
+
+			for(int i = 0; i<50; i++) {
+				double ranangle = Math.toRadians(Math.random() * 360);
+				Vector3 ranpos = MovementMath.lengthDir(ranangle, radius-3);
+				Vector3 placepos = MovementMath.lengthDir(Math.toRadians(Math.toDegrees(ranangle)+90), 16);
+				TreeList.add(new FrameworkMO.DestroyableObject("deadtree.png", x + ranpos.x + placepos.x, y + ranpos.y + placepos.y, 32, 64, 0, 0, Math.toDegrees(ranangle)-90, null));
+			}
 
 			PlanetList.add(this);
 		}
