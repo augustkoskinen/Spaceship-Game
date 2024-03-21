@@ -274,12 +274,14 @@ public class SpaceshipGameManager extends Game {
 	}
 	public static class Inventory {
 		private Sprite inventoryspr;
+		private Sprite hotbarspr;
 		private Texture hoverslot;
 		private Texture takenslot;
 		private FrameworkMO.AnimationSet count;
 		public Item[][] storage = new Item[3][6];
 		public Item[][] accessories = new Item[3][2];
 		public Item[][] hotbar = new Item[1][6];
+		public int hotbarslot = 0;
 		public Item dragItem = null;
 		public Item hoverItem = null;
 		public boolean inventoryopen = false;
@@ -288,6 +290,9 @@ public class SpaceshipGameManager extends Game {
 			inventoryspr = new Sprite(new Texture("inventory.png"));
 			inventoryspr.setScale(2,2);
 			inventoryspr.setPosition(736/4,416/4);
+			hotbarspr = new Sprite(new Texture("hotbar.png"));
+			hotbarspr.setScale(2,2);
+			hotbarspr.setPosition(736/4,416/4);
 			hoverslot = new Texture("hoverslot.png");
 			takenslot = new Texture("takenslot.png");
 			count = new FrameworkMO.AnimationSet("numbers.png",17,1,1);
@@ -296,21 +301,38 @@ public class SpaceshipGameManager extends Game {
 			for(int i = 0; i<ranadd;i++) {
 				storage[(int)(Math.random()*3)][(int)(Math.random()*6)] = new Item(0);
 			}
+			ranadd = (int)(Math.random()*7);
+			for(int i = 0; i<ranadd;i++) {
+				hotbar[0][(int)(Math.random()*6)] = new Item(0);
+			}
 		}
 		public void drawInventory(SpriteBatch batch) {
 			batch.begin();
 			if(inventoryopen) {
+				int switchslot = -1;
+				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) switchslot = 0;
+				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_2)) switchslot = 1;
+				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_3)) switchslot = 2;
+				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_4)) switchslot = 3;
+				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_5)) switchslot = 4;
+				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_6)) switchslot = 5;
 				inventoryspr.draw(batch);
 				boolean catchmouse = false;
 				for (int i = 0; i < accessories.length; i++) {
 					for (int j = 0; j < accessories[i].length; j++) {
 						if(accessories[i][j]!=null) {
-							batch.draw(new TextureRegion(takenslot),j * 52 + 152, i * 54 + 54, 0, 0, accessories[i][j].text.getWidth(), accessories[i][j].text.getHeight(), 1, 1, 0);
+							batch.draw(new TextureRegion(takenslot),j * 52 + 152, i * 54 + 54, 0, 0, takenslot.getWidth(), takenslot.getHeight(), 2, 2, 0);
 						}
 						if(Gdx.input.getX()>=j * 52 + 152&&Gdx.input.getX()<=j * 52 + 152 + 32&&Gdx.graphics.getHeight() - Gdx.input.getY()>=i * 54 + 54&&Gdx.graphics.getHeight() - Gdx.input.getY()<=i * 54 + 54+32&&!catchmouse) {
-							batch.draw(new TextureRegion(hoverslot), j * 52 + 152, i * 54 + 54, 0, 0, hoverslot.getWidth(), hoverslot.getHeight(), 2, 2, 0); //Gdx.input.getX()
+							batch.draw(new TextureRegion(hoverslot), j * 52 + 152, i * 54 + 54, 0, 0, hoverslot.getWidth(), hoverslot.getHeight(), 2, 2, 0);
 							catchmouse = true;
 							hoverItem = accessories[i][j];
+
+							if(switchslot!=-1) {
+								accessories[i][j] = hotbar[0][switchslot];
+								hotbar[0][switchslot] = hoverItem;
+							}
+
 							if(mainplayer.justclicked&&dragItem==null) {
 								mainplayer.justclicked = false;
 
@@ -337,19 +359,25 @@ public class SpaceshipGameManager extends Game {
 						if(accessories[i][j]!=null) {
 							batch.draw(new TextureRegion(accessories[i][j].text),j * 52 + 152, i * 54 + 54);
 							count.time = accessories[i][j].amount;
-							batch.draw(count.getAnim(),j * 52 + 152, i * 54 + 54, 0, 0, accessories[i][j].text.getWidth(), accessories[i][j].text.getHeight(), 1, 1, 0);
+							batch.draw(count.getAnim(),j * 52 + 152, i * 54 + 54, 0, 0, count.getAnim().getRegionWidth(), count.getAnim().getRegionHeight(), 2, 2, 0);
 						}
 					}
 				}
 				for (int i = 0; i < storage.length; i++) {
 					for (int j = 0; j < storage[i].length; j++) {
 						if(storage[i][j]!=null) {
-							batch.draw(new TextureRegion(takenslot),j * 52 + 298, i * 54 + 148, 0, 0, storage[i][j].text.getWidth(), storage[i][j].text.getHeight(), 1, 1, 0);
+							batch.draw(new TextureRegion(takenslot),j * 52 + 298, i * 54 + 148, 0, 0, takenslot.getWidth(), takenslot.getHeight(), 2, 2, 0);
 						}
 						if(Gdx.input.getX()>=j * 52 + 298&&Gdx.input.getX()<=j * 52 + 298 + 32&&Gdx.graphics.getHeight() - Gdx.input.getY()>=i * 54 + 148&&Gdx.graphics.getHeight() - Gdx.input.getY()<=i * 54 + 148 + 32&&!catchmouse) {
-							batch.draw(new TextureRegion(hoverslot), j * 52 + 298, i * 54 + 148,0,0,hoverslot.getWidth(),hoverslot.getHeight(),2,2,0); //Gdx.input.getX()
+							batch.draw(new TextureRegion(hoverslot), j * 52 + 298, i * 54 + 148,0,0,hoverslot.getWidth(),hoverslot.getHeight(),2,2,0);
 							catchmouse = true;
 							hoverItem = storage[i][j];
+
+							if(switchslot!=-1) {
+								storage[i][j] = hotbar[0][switchslot];
+								hotbar[0][switchslot] = hoverItem;
+							}
+
 							if(mainplayer.justclicked&&dragItem==null) {
 								mainplayer.justclicked = false;
 
@@ -376,18 +404,24 @@ public class SpaceshipGameManager extends Game {
 						if(storage[i][j]!=null) {
 							batch.draw(new TextureRegion(storage[i][j].text),j * 52 + 298, i * 54 + 148);
 							count.time = storage[i][j].amount;
-							batch.draw(count.getAnim(),j * 52 + 298, i * 54 + 148, 0, 0, storage[i][j].text.getWidth(), storage[i][j].text.getHeight(), 1, 1, 0);
+							batch.draw(count.getAnim(),j * 52 + 298, i * 54 + 148, 0, 0, count.getAnim().getRegionWidth(), count.getAnim().getRegionHeight(), 2, 2, 0);
 						}
 					}
 				}
 				for (int j = 0; j < hotbar[0].length; j++) {
 					if(hotbar[0][j]!=null) {
-						batch.draw(new TextureRegion(takenslot),j * 52 + 298, 54, 0, 0, hotbar[0][j].text.getWidth(), hotbar[0][j].text.getHeight(), 1, 1, 0);
+						batch.draw(new TextureRegion(takenslot),j * 52 + 298, 54, 0, 0, takenslot.getWidth(), takenslot.getHeight(), 2, 2, 0);
 					}
 					if(Gdx.input.getX()>=j * 52 + 298&&Gdx.input.getX()<=j * 52 + 298 + 32&&Gdx.graphics.getHeight() - Gdx.input.getY()>=54&&Gdx.graphics.getHeight() - Gdx.input.getY()<=54 + 32&&!catchmouse) {
-						batch.draw(new TextureRegion(hoverslot), j * 52 + 298, 54,0,0,hoverslot.getWidth(),hoverslot.getHeight(),2,2,0); //Gdx.input.getX()
+						batch.draw(new TextureRegion(hoverslot), j * 52 + 298, 54,0,0,hoverslot.getWidth(),hoverslot.getHeight(),2,2,0);
 						catchmouse = true;
 						hoverItem = hotbar[0][j];
+
+						if(switchslot!=-1) {
+							hotbar[0][j] = hotbar[0][switchslot];
+							hotbar[0][switchslot] = hoverItem;
+						}
+
 						if(mainplayer.justclicked&&dragItem==null) {
 							mainplayer.justclicked = false;
 
@@ -414,19 +448,38 @@ public class SpaceshipGameManager extends Game {
 					if(hotbar[0][j]!=null) {
 						batch.draw(new TextureRegion(hotbar[0][j].text),j * 52 + 298, 54);
 						count.time = hotbar[0][j].amount;
-						batch.draw(count.getAnim(),j * 52 + 298, 54, 0, 0, hotbar[0][j].text.getWidth(), hotbar[0][j].text.getHeight(), 1, 1, 0);
+						batch.draw(count.getAnim(),j * 52 + 298, 54, 0, 0, count.getAnim().getRegionWidth(), count.getAnim().getRegionHeight(), 2, 2, 0);
 					}
 				}
 				if(dragItem!=null) {
 					batch.draw(dragItem.text,Gdx.input.getX()-16,Gdx.graphics.getHeight() - Gdx.input.getY()-16);
 					if(dragItem.stackable) {
 						count.time = dragItem.amount;
-						batch.draw(count.getAnim(), Gdx.input.getX() - 16, Gdx.graphics.getHeight() - Gdx.input.getY() - 16, 0, 0, dragItem.text.getWidth(), dragItem.text.getHeight(), 1, 1, 0);
+						batch.draw(count.getAnim(), Gdx.input.getX() - 16, Gdx.graphics.getHeight() - Gdx.input.getY() - 16, 0, 0, count.getAnim().getRegionWidth(), count.getAnim().getRegionHeight(), 2, 2, 0);
 					}
 					if(mainplayer.justclicked) {
 						mainplayer.justclicked = false;
 
 						dragItem = null;
+					}
+				}
+			} else {
+				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) hotbarslot = 0;
+				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_2)) hotbarslot = 1;
+				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_3)) hotbarslot = 2;
+				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_4)) hotbarslot = 3;
+				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_5)) hotbarslot = 4;
+				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_6)) hotbarslot = 5;
+				hotbarspr.draw(batch);
+				for (int j = 0; j < hotbar[0].length; j++) {
+					if(j==hotbarslot)
+						batch.draw(new TextureRegion(hoverslot),j * 52 + 222, 52, 0, 0, hoverslot.getWidth(),hoverslot.getHeight(), 2, 2, 0);
+					if(hotbar[0][j]!=null) {
+						if(j!=hotbarslot)
+							batch.draw(new TextureRegion(takenslot),j * 52 + 222, 52, 0, 0, takenslot.getWidth(), takenslot.getHeight(), 2, 2, 0);
+						batch.draw(new TextureRegion(hotbar[0][j].text),j * 52 + 222, 52);
+						count.time = hotbar[0][j].amount;
+						batch.draw(count.getAnim(),j * 52 + 222, 52, 0, 0, count.getAnim().getRegionWidth(), count.getAnim().getRegionHeight(), 2, 2, 0);
 					}
 				}
 			}
