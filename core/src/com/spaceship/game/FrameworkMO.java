@@ -58,11 +58,11 @@ public class FrameworkMO {
             this.depth = ypos;
             collision.x = (float) xpos;
             collision.y = (float) ypos;
+            collision.height = (float) colheight;
+            collision.width = (float) colwidth;
+            collision.x += coladdx;
+            collision.y += coladdy;
             if (collist!=null) {
-                collision.height = (float) colheight;
-                collision.width = (float) colwidth;
-                collision.x += coladdx;
-                collision.y += coladdy;
                 coloffx = coladdx;
                 coloffy = coladdy;
                 collist.add(collision);
@@ -81,11 +81,11 @@ public class FrameworkMO {
             rotation = rot;
             collision.x = (float) xpos;
             collision.y = (float) ypos;
+            collision.height = (float) colheight;
+            collision.width = (float) colwidth;
+            collision.x += coladdx;
+            collision.y += coladdy;
             if (collist!=null) {
-                collision.height = (float) colheight;
-                collision.width = (float) colwidth;
-                collision.x += coladdx;
-                collision.y += coladdy;
                 coloffx = coladdx;
                 coloffy = coladdy;
                 collist.add(collision);
@@ -120,10 +120,8 @@ public class FrameworkMO {
             super(texturepath, xpos, ypos, colwidth, colheight, coladdx, coladdy, rot, collist);
             health = 5;
         }
-        public boolean checkDestroyable(SpaceshipGameManager.Player player, ArrayList<ParticleSet> ParticleList, ArrayList<SpaceshipGameManager.Planet> PlanetList) {
-            if(MovementMath.pointDis(player.sprite.getPosition(),
-                MovementMath.addVect(getPosition(),MovementMath.lengthDir(Math.toRadians(rotation+90-45), 22.627416998))
-                )<16&& player.justclicked) {
+        public boolean checkDestroyable(SpaceshipGameManager.Player player, ArrayList<ParticleSet> ParticleList, ArrayList<SpaceshipGameManager.Planet> PlanetList, boolean paused) {
+            if(MovementMath.overlaps(player.sprite.collision,collision,rotation,Math.toDegrees(player.gpulldir)+180+45)&& player.justclicked && !paused) {
                 player.justclicked = false;
                 health--;
                 Vector3 placepos = MovementMath.lengthDir(Math.toRadians(rotation+63.4349488229), 35.77708764);

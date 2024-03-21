@@ -2,10 +2,12 @@ package com.spaceship.game;
 
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 
 import java.util.ArrayList;
@@ -86,7 +88,6 @@ public class SpaceshipGameManager extends Game {
 	//OBJECTS
 	//===========>
 
-
 	public static class Player {
 		//basic vars
 		public FrameworkMO.SpriteObjectCirc sprite;
@@ -94,6 +95,7 @@ public class SpaceshipGameManager extends Game {
 		public double y = 0;
 		public Vector3 centerpos;
 		public int skintype = 1;
+		public Inventory inventory;
 
 		//move
 		public Vector3 netvect = new Vector3();
@@ -114,6 +116,8 @@ public class SpaceshipGameManager extends Game {
 		public boolean justclicked = false;
 
 		public Player(Vector3 pos) {
+			inventory = new Inventory();
+
 			sprite = new FrameworkMO.SpriteObjectCirc("p1body.png", pos.x, pos.y, 8, CollisionList);
 
 			this.centerpos = new Vector3(8,8,0);
@@ -124,6 +128,11 @@ public class SpaceshipGameManager extends Game {
 
 		public TextureRegion updatePlayerPos() {
 			justclicked = Gdx.input.justTouched();
+
+			if(Gdx.input.isKeyJustPressed(Input.Keys.TAB)) {
+				inventory.inventoryopen = !inventory.inventoryopen;
+				pause = inventory.inventoryopen;
+			}
 
 			//setting up vars
 			TextureRegion playertext;
@@ -263,6 +272,185 @@ public class SpaceshipGameManager extends Game {
 			return new FrameworkMO.TextureSet(new TextureRegion(new Texture("eyes.png")), xpos, ypos, 10000, (double) gpulldir+Math.toRadians(movedir==-1?-90:90));
 		}
 	}
+	public static class Inventory {
+		private Sprite inventoryspr;
+		private Texture hoverslot;
+		private Texture takenslot;
+		private FrameworkMO.AnimationSet count;
+		public Item[][] storage = new Item[3][6];
+		public Item[][] accessories = new Item[3][2];
+		public Item[][] hotbar = new Item[1][6];
+		public Item dragItem = null;
+		public Item hoverItem = null;
+		public boolean inventoryopen = false;
+		public Inventory() {
+			//textures
+			inventoryspr = new Sprite(new Texture("inventory.png"));
+			inventoryspr.setScale(2,2);
+			inventoryspr.setPosition(736/4,416/4);
+			hoverslot = new Texture("hoverslot.png");
+			takenslot = new Texture("takenslot.png");
+			count = new FrameworkMO.AnimationSet("numbers.png",17,1,1);
+
+			int ranadd = (int)(Math.random()*3)+2;
+			for(int i = 0; i<ranadd;i++) {
+				storage[(int)(Math.random()*3)][(int)(Math.random()*6)] = new Item(0);
+			}
+		}
+		public void drawInventory(SpriteBatch batch) {
+			batch.begin();
+			if(inventoryopen) {
+				inventoryspr.draw(batch);
+				boolean catchmouse = false;
+				for (int i = 0; i < accessories.length; i++) {
+					for (int j = 0; j < accessories[i].length; j++) {
+						if(accessories[i][j]!=null) {
+							batch.draw(new TextureRegion(takenslot),j * 52 + 152, i * 54 + 54, 0, 0, accessories[i][j].text.getWidth(), accessories[i][j].text.getHeight(), 1, 1, 0);
+						}
+						if(Gdx.input.getX()>=j * 52 + 152&&Gdx.input.getX()<=j * 52 + 152 + 32&&Gdx.graphics.getHeight() - Gdx.input.getY()>=i * 54 + 54&&Gdx.graphics.getHeight() - Gdx.input.getY()<=i * 54 + 54+32&&!catchmouse) {
+							batch.draw(new TextureRegion(hoverslot), j * 52 + 152, i * 54 + 54, 0, 0, hoverslot.getWidth(), hoverslot.getHeight(), 2, 2, 0); //Gdx.input.getX()
+							catchmouse = true;
+							hoverItem = accessories[i][j];
+							if(mainplayer.justclicked&&dragItem==null) {
+								mainplayer.justclicked = false;
+
+								dragItem = hoverItem;
+								accessories[i][j] = null;
+							} else if(mainplayer.justclicked) {
+								mainplayer.justclicked = false;
+
+								if(hoverItem==null) {
+									accessories[i][j] = dragItem;
+									dragItem = null;
+								}  else if (hoverItem.stackable&&hoverItem.amount+dragItem.amount<=16) {
+									hoverItem.amount += dragItem.amount;
+									dragItem = null;
+								} else if (hoverItem.stackable&&hoverItem.amount+dragItem.amount>16) {
+									dragItem.amount = hoverItem.amount+dragItem.amount-16;
+									hoverItem.amount = 16;
+								} else {
+									accessories[i][j] = dragItem;
+									dragItem = hoverItem;
+								}
+							}
+						}
+						if(accessories[i][j]!=null) {
+							batch.draw(new TextureRegion(accessories[i][j].text),j * 52 + 152, i * 54 + 54);
+							count.time = accessories[i][j].amount;
+							batch.draw(count.getAnim(),j * 52 + 152, i * 54 + 54, 0, 0, accessories[i][j].text.getWidth(), accessories[i][j].text.getHeight(), 1, 1, 0);
+						}
+					}
+				}
+				for (int i = 0; i < storage.length; i++) {
+					for (int j = 0; j < storage[i].length; j++) {
+						if(storage[i][j]!=null) {
+							batch.draw(new TextureRegion(takenslot),j * 52 + 298, i * 54 + 148, 0, 0, storage[i][j].text.getWidth(), storage[i][j].text.getHeight(), 1, 1, 0);
+						}
+						if(Gdx.input.getX()>=j * 52 + 298&&Gdx.input.getX()<=j * 52 + 298 + 32&&Gdx.graphics.getHeight() - Gdx.input.getY()>=i * 54 + 148&&Gdx.graphics.getHeight() - Gdx.input.getY()<=i * 54 + 148 + 32&&!catchmouse) {
+							batch.draw(new TextureRegion(hoverslot), j * 52 + 298, i * 54 + 148,0,0,hoverslot.getWidth(),hoverslot.getHeight(),2,2,0); //Gdx.input.getX()
+							catchmouse = true;
+							hoverItem = storage[i][j];
+							if(mainplayer.justclicked&&dragItem==null) {
+								mainplayer.justclicked = false;
+
+								dragItem = hoverItem;
+								storage[i][j] = null;
+							} else if(mainplayer.justclicked) {
+								mainplayer.justclicked = false;
+
+								if(hoverItem==null) {
+									storage[i][j] = dragItem;
+									dragItem = null;
+								} else if (hoverItem.stackable&&hoverItem.amount+dragItem.amount<=16) {
+									hoverItem.amount += dragItem.amount;
+									dragItem = null;
+								} else if (hoverItem.stackable&&hoverItem.amount+dragItem.amount>16) {
+									dragItem.amount = hoverItem.amount+dragItem.amount-16;
+									hoverItem.amount = 16;
+								} else {
+									storage[i][j] = dragItem;
+									dragItem = hoverItem;
+								}
+							}
+						}
+						if(storage[i][j]!=null) {
+							batch.draw(new TextureRegion(storage[i][j].text),j * 52 + 298, i * 54 + 148);
+							count.time = storage[i][j].amount;
+							batch.draw(count.getAnim(),j * 52 + 298, i * 54 + 148, 0, 0, storage[i][j].text.getWidth(), storage[i][j].text.getHeight(), 1, 1, 0);
+						}
+					}
+				}
+				for (int j = 0; j < hotbar[0].length; j++) {
+					if(hotbar[0][j]!=null) {
+						batch.draw(new TextureRegion(takenslot),j * 52 + 298, 54, 0, 0, hotbar[0][j].text.getWidth(), hotbar[0][j].text.getHeight(), 1, 1, 0);
+					}
+					if(Gdx.input.getX()>=j * 52 + 298&&Gdx.input.getX()<=j * 52 + 298 + 32&&Gdx.graphics.getHeight() - Gdx.input.getY()>=54&&Gdx.graphics.getHeight() - Gdx.input.getY()<=54 + 32&&!catchmouse) {
+						batch.draw(new TextureRegion(hoverslot), j * 52 + 298, 54,0,0,hoverslot.getWidth(),hoverslot.getHeight(),2,2,0); //Gdx.input.getX()
+						catchmouse = true;
+						hoverItem = hotbar[0][j];
+						if(mainplayer.justclicked&&dragItem==null) {
+							mainplayer.justclicked = false;
+
+							dragItem = hoverItem;
+							hotbar[0][j] = null;
+						} else if(mainplayer.justclicked) {
+							mainplayer.justclicked = false;
+
+							if(hoverItem==null) {
+								hotbar[0][j] = dragItem;
+								dragItem = null;
+							} else if (hoverItem.stackable&&hoverItem.amount+dragItem.amount<=16) {
+								hoverItem.amount += dragItem.amount;
+								dragItem = null;
+							} else if (hoverItem.stackable&&hoverItem.amount+dragItem.amount>16) {
+								dragItem.amount = hoverItem.amount+dragItem.amount-16;
+								hoverItem.amount = 16;
+							} else {
+								hotbar[0][j] = dragItem;
+								dragItem = hoverItem;
+							}
+						}
+					}
+					if(hotbar[0][j]!=null) {
+						batch.draw(new TextureRegion(hotbar[0][j].text),j * 52 + 298, 54);
+						count.time = hotbar[0][j].amount;
+						batch.draw(count.getAnim(),j * 52 + 298, 54, 0, 0, hotbar[0][j].text.getWidth(), hotbar[0][j].text.getHeight(), 1, 1, 0);
+					}
+				}
+				if(dragItem!=null) {
+					batch.draw(dragItem.text,Gdx.input.getX()-16,Gdx.graphics.getHeight() - Gdx.input.getY()-16);
+					if(dragItem.stackable) {
+						count.time = dragItem.amount;
+						batch.draw(count.getAnim(), Gdx.input.getX() - 16, Gdx.graphics.getHeight() - Gdx.input.getY() - 16, 0, 0, dragItem.text.getWidth(), dragItem.text.getHeight(), 1, 1, 0);
+					}
+					if(mainplayer.justclicked) {
+						mainplayer.justclicked = false;
+
+						dragItem = null;
+					}
+				}
+			}
+			batch.end();
+		}
+	}
+	public static class Item {
+		public int type;
+		public Texture text;
+		public boolean stackable;
+		public int amount = 1;
+		public Item(int t) {
+			type = t;
+			switch (type) {
+				case 0 : {
+					stackable = true;
+					break;
+				}
+			}
+
+			if(stackable) amount = (int)(Math.random()*16)+1;
+			text = new Texture("item/"+type+".png");
+		}
+	}
 
 	public static class Planet {
 		static ArrayList<FrameworkMO.DestroyableObject> TreeList = new ArrayList<>();
@@ -296,11 +484,11 @@ public class SpaceshipGameManager extends Game {
 			x=sprite.x+radius;
 			y=sprite.y+radius;
 
-			for(int i = 0; i<50; i++) {
+			for(int i = 0; i<1; i++) {
 				double ranangle = Math.toRadians(Math.random() * 360);
 				Vector3 ranpos = MovementMath.lengthDir(ranangle, radius-3);
 				Vector3 placepos = MovementMath.lengthDir(Math.toRadians(Math.toDegrees(ranangle)+90), 16);
-				TreeList.add(new FrameworkMO.DestroyableObject("deadtree.png", x + ranpos.x + placepos.x, y + ranpos.y + placepos.y, 32, 64, 0, 0, Math.toDegrees(ranangle)-90, null));
+				TreeList.add(new FrameworkMO.DestroyableObject("deadtree.png", x + ranpos.x + placepos.x, y + ranpos.y + placepos.y, 16, 32, 0, 0, Math.toDegrees(ranangle)-90, null));
 			}
 
 			PlanetList.add(this);

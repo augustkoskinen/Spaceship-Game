@@ -10,6 +10,7 @@ public class DesktopLauncher {
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 		config.setForegroundFPS(60);
 		config.setTitle("Spaceship Game");
+		config.setWindowedMode(736,416);
 		new Lwjgl3Application(new SpaceshipGameManager("desktop"), config);
 	}
 }

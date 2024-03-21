@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
@@ -31,7 +32,7 @@ public class GameScreen implements Screen {
 
         // cam setup
         cam = new OrthographicCamera();
-        cam.setToOrtho(false, (manager.WORLD_WIDTH*manager.TILE_WIDTH), (manager.WORLD_HEIGHT*manager.TILE_WIDTH));
+        cam.setToOrtho(false, 736, 416);
         cam.position.set(new Vector3((float)(player.x), (float)(player.y), 0));
         camrot = MovementMath.getCameraAngle(cam);
     }
@@ -66,7 +67,7 @@ public class GameScreen implements Screen {
         for(SpaceshipGameManager.Planet planet : manager.PlanetList) {
             for(int i = 0; i<planet.TreeList.size();i++) {
                 Texture text = planet.TreeList.get(i).texture;
-                boolean alive = planet.TreeList.get(i).checkDestroyable(player,manager.ParticleList,manager.PlanetList);
+                boolean alive = planet.TreeList.get(i).checkDestroyable(player,manager.ParticleList,manager.PlanetList,manager.pause);
                 if(alive) {
                     batch.draw(new TextureRegion(text),(float)(planet.TreeList.get(i).x),(float)(planet.TreeList.get(i).y),0,0,text.getWidth(),text.getHeight(),1,1,(float)(planet.TreeList.get(i).rotation));
                 } else {
@@ -97,7 +98,6 @@ public class GameScreen implements Screen {
                 i--;
             } else {
                 for(FrameworkMO.TextureSet textset : textlist) {
-                    //System.out.println(textset.x);
                     batch.draw(
                         textset.texture,
                         (float) (textset.x),
@@ -128,6 +128,8 @@ public class GameScreen implements Screen {
         }
 
         batch.end();
+
+        player.inventory.drawInventory(manager.batch);
     }
 
     //necessary overrides

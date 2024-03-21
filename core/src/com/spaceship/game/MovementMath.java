@@ -147,6 +147,47 @@ public class MovementMath extends ApplicationAdapter {
     }
 
     //checks an overlap between a circle and a rectangle
+    public static boolean overlaps(Circle circ, Rectangle rect, double rectrot, double circrot){
+        double rectcenterx = rect.x + MovementMath.lengthDir(Math.toRadians(rectrot),Math.sqrt(Math.pow(rect.width,2)+Math.pow(rect.height,2))/2).x;
+        double rectcentery = rect.y + MovementMath.lengthDir(Math.toRadians(rectrot),Math.sqrt(Math.pow(rect.width,2)+Math.pow(rect.height,2))/2).y;
+
+        double circcenterx = circ.x;// + MovementMath.lengthDir(Math.toRadians(circrot),circ.radius).x;
+        double circcentery = circ.y;// + MovementMath.lengthDir(Math.toRadians(circrot),circ.radius).y;
+
+        //System.out.println(circcenterx);
+        //System.out.println(circcentery);
+
+        // Rotate circle's center point back
+        double unrotatedCircleX = Math.cos(Math.toRadians(rectrot)) * (circcenterx - rectcenterx) - Math.sin(Math.toRadians(rectrot)) * (circcentery - rectcentery) + rectcenterx;
+        double unrotatedCircleY  = Math.sin(Math.toRadians(rectrot)) * (circcenterx - rectcenterx) + Math.cos(Math.toRadians(rectrot)) * (circcentery - rectcentery) + rectcentery;
+
+        // Closest point in the rectangle to the center of circle rotated backwards(unrotated)
+        double closestX, closestY;
+
+        // Find the unrotated closest x point from center of unrotated circle
+        if (unrotatedCircleX  < rect.x)
+            closestX = rect.x;
+        else if (unrotatedCircleX  > rect.x + rect.width)
+            closestX = rect.x + rect.width;
+        else
+            closestX = unrotatedCircleX ;
+
+        // Find the unrotated closest y point from center of unrotated circle
+        if (unrotatedCircleY < rect.y)
+            closestY = rect.y;
+        else if (unrotatedCircleY > rect.y + rect.height)
+            closestY = rect.y + rect.height;
+        else
+            closestY = unrotatedCircleY;
+
+        double distance = MovementMath.pointDis(new Vector3((float)unrotatedCircleX, (float)unrotatedCircleY,0), new Vector3((float)closestX, (float)closestY,0));
+        if (distance < circ.radius)
+            return true; // Collision
+        else
+            return false;
+    }
+
+
     static public boolean overlaps(Rectangle rect, Circle circ){
         double circDisX = Math.abs((circ.x+circ.radius) - (rect.x));
         double circDisY = Math.abs((circ.y+circ.radius) - (rect.y));
