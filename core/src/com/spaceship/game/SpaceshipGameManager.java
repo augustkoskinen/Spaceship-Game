@@ -20,9 +20,6 @@ public class SpaceshipGameManager extends Game {
 	public static Player mainplayer;
 
 	//consts
-	public static final int TILE_WIDTH = 16;
-	public static final int WORLD_WIDTH = 46;
-	public static final int WORLD_HEIGHT = 26;
 	public static final double MULT_AMOUNT = 55;
 	public static double SLOWSPEED = 1;
 	public static final double WALK_SPEED = 1*MULT_AMOUNT;
@@ -34,6 +31,7 @@ public class SpaceshipGameManager extends Game {
 	static ArrayList<FrameworkMO.SpriteObjectSqr> SprObjSqrList = new ArrayList<>();
 	static ArrayList<FrameworkMO.SpriteObjectCirc> SprObjCircList = new ArrayList<>();
 	static ArrayList<FrameworkMO.ParticleSet> ParticleList = new ArrayList<>();
+	static ArrayList<Item> ItemList = new ArrayList<>();
 	static ArrayList CollisionList = new ArrayList<>();
 
 	//shake vars
@@ -48,9 +46,7 @@ public class SpaceshipGameManager extends Game {
 	public void create () {
 		batch = new SpriteBatch();
 		mainplayer = new Player(new Vector3(512,1032,0));
-		//new Planet(new Vector3(0,0,0),0);
-		new Planet(new Vector3(0,0,0),1);
-		//ParticleList.add(new FrameworkMO.ParticleSet(0,mainplayer.getPosition(),PlanetList));
+		new Planet(new Vector3(512,512,0),1);
 
 		this.setScreen(new GameScreen(this));
 	}
@@ -61,24 +57,6 @@ public class SpaceshipGameManager extends Game {
 	@Override
 	public void dispose () {
 		batch.dispose();
-	}
-
-	public static void addShake(double add) {
-		shake = true;
-		shaketime = add;
-	}
-
-	public void updateShake() {
-		if(shake)
-			loadjiggle = new Vector3((float)((shaketime*2)*((int)(Math.random()*2)==0 ? 1f : -1f)),(float)((shaketime*2)*((int)(Math.random()*2)==0 ? 1f : -1f)),0);
-
-		if(shaketime>0)
-			shaketime-=Gdx.graphics.getDeltaTime();
-		else {
-			shaketime = .7f;
-			shake = false;
-			loadjiggle = new Vector3();
-		}
 	}
 
 
@@ -93,7 +71,6 @@ public class SpaceshipGameManager extends Game {
 		public FrameworkMO.SpriteObjectCirc sprite;
 		public double x = 0;
 		public double y = 0;
-		public Vector3 centerpos;
 		public int skintype = 1;
 		public Inventory inventory;
 
@@ -120,10 +97,8 @@ public class SpaceshipGameManager extends Game {
 
 			sprite = new FrameworkMO.SpriteObjectCirc("p1body.png", pos.x, pos.y, 8, CollisionList);
 
-			this.centerpos = new Vector3(8,8,0);
-
-			x = pos.x + 8;
-			y = pos.y + 8;
+			x = pos.x;
+			y = pos.y;
 		}
 
 		public TextureRegion updatePlayerPos() {
@@ -146,22 +121,22 @@ public class SpaceshipGameManager extends Game {
 				gpulldir = MovementMath.pointDir(sprite.getPosition(),SpaceMath.getClosestPlanet(sprite.getPosition(),PlanetList).getPosition());
 
 				double multamount = Gdx.graphics.getDeltaTime() * SLOWSPEED;
-				Vector3 gpulltemp = SpaceMath.getNetGravity(sprite.getPosition(), PlanetList);
+				Vector3 gpulltemp = SpaceMath.getNetGravity(sprite.getPosition(), PlanetList,1);
 				gpullvect = MovementMath.addVect(gpullvect, new Vector3((float)(gpulltemp.x * multamount),(float)(gpulltemp.y * multamount),0));
 
 				if (netmove != 0) {
 					double movespeed = netmove * WALK_SPEED;
-					walkvect = new Vector3(walkvect.x+(float)(Math.cos(gpulldir+Math.toRadians(90))*movespeed),walkvect.y+(float)(Math.sin(gpulldir+Math.toRadians(90))*movespeed),0);
+					walkvect = new Vector3(walkvect.x+(MovementMath.lengthDir(gpulldir+90,movespeed).x),walkvect.y+(MovementMath.lengthDir(gpulldir+90,movespeed).y),0);
 					movedir = netmove;
 				}
 
 				boolean grounded = MovementMath.CheckCollisions(playercol, CollisionList, MovementMath.lengthDir(gpulldir,1), 7.5f)!=-1;
 
-				if (grounded) { jumpcount = 1; gpullvect = new Vector3();}
+				if (grounded) {jumpcount = 1; gpullvect = new Vector3();}
 
 				if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && jumpcount > 0) {
 
-					PoofCloudList.add(new PoofCloud(Math.toDegrees(gpulldir)+90, new Vector3((float) (sprite.x-8), (float) (sprite.y-8), 0)));
+					PoofCloudList.add(new PoofCloud(gpulldir+90, new Vector3((float) (sprite.x-8), (float) (sprite.y-8), 0)));
 
 					jumpcount--;
 					if (jumpdiradd == 0) {
@@ -172,7 +147,7 @@ public class SpaceshipGameManager extends Game {
 							jumpdir = 360;
 					}
 
-					Vector3 addupvect = MovementMath.lengthDir(gpulldir+Math.toRadians(180),JUMP_SPEED);
+					Vector3 addupvect = MovementMath.lengthDir(gpulldir+180,JUMP_SPEED);
 					jumpvect.x = addupvect.x;
 					jumpvect.y = addupvect.y;
 				}
@@ -231,10 +206,10 @@ public class SpaceshipGameManager extends Game {
 				walkvect.y *= .5f;
 				jumpvect.x *= .92f;
 				jumpvect.y *= .92f;
-
-				x = sprite.x;
-				y = sprite.y;
 			}
+
+			x = sprite.getPosition().x;
+			y = sprite.getPosition().y;
 
 			sprite.depth = y;
 			if (jumpdir != 0) {
@@ -264,14 +239,16 @@ public class SpaceshipGameManager extends Game {
 		}
 
 		public FrameworkMO.TextureSet getEyeText() {
-			Vector3 addpos = MovementMath.lengthDir((double) gpulldir+Math.toRadians(movedir==-1?-90:90), 1.8f);
+			Vector3 addpos = MovementMath.lengthDir(gpulldir+(movedir==-1?-90:90), 1.8f);
 
-			double xpos = sprite.collision.x + addpos.x;
-			double ypos = sprite.collision.y - 0.5f + addpos.y;
+			double xpos = x + addpos.x;
+			double ypos = y - 0.5f + addpos.y;
 
-			return new FrameworkMO.TextureSet(new TextureRegion(new Texture("eyes.png")), xpos, ypos, 10000, (double) gpulldir+Math.toRadians(movedir==-1?-90:90));
+			return new FrameworkMO.TextureSet(new TextureRegion(new Texture("eyes.png")), xpos, ypos, 10000, gpulldir+(movedir==-1?-90:90));
 		}
 	}
+
+
 	public static class Inventory {
 		private Sprite inventoryspr;
 		private Sprite hotbarspr;
@@ -458,8 +435,8 @@ public class SpaceshipGameManager extends Game {
 						batch.draw(count.getAnim(), Gdx.input.getX() - 16, Gdx.graphics.getHeight() - Gdx.input.getY() - 16, 0, 0, count.getAnim().getRegionWidth(), count.getAnim().getRegionHeight(), 2, 2, 0);
 					}
 					if(mainplayer.justclicked) {
+						dragItem.drop();
 						mainplayer.justclicked = false;
-
 						dragItem = null;
 					}
 				}
@@ -485,8 +462,45 @@ public class SpaceshipGameManager extends Game {
 			}
 			batch.end();
 		}
+
+		public Item addItem(Item item) {
+			boolean foundspot = false;
+			for (int j = 0; j < hotbar[0].length; j++) {
+				if(hotbar[0][j]==null&&!foundspot) {
+					hotbar[0][j] = item;
+					foundspot = true;
+				} else if(hotbar[0][j]!=null&&hotbar[0][j].type==item.type&&item.stackable&&item.amount+hotbar[0][j].amount<=16&&!foundspot) {
+					hotbar[0][j].amount += item.amount;
+					foundspot = true;
+				} else if(hotbar[0][j]!=null&&hotbar[0][j].type==item.type&&item.stackable&&item.amount+hotbar[0][j].amount>16&&!foundspot) {
+					item.amount = item.amount+hotbar[0][j].amount-16;
+					hotbar[0][j].amount = 16;
+				}
+			}
+			for (int i = 0; i < storage.length; i++) {
+				for (int j = 0; j < storage[i].length; j++) {
+					if(storage[i][j]==null&&!foundspot) {
+						storage[i][j] = item;
+						foundspot = true;
+					} else if(storage[i][j]!=null&&storage[i][j].type==item.type&&item.stackable&&item.amount+storage[i][j].amount<=16&&!foundspot) {
+						storage[i][j].amount += item.amount;
+						foundspot = true;
+					} else if(storage[i][j]!=null&&storage[i][j].type==item.type&&item.stackable&&item.amount+storage[i][j].amount>16&&!foundspot) {
+						item.amount = item.amount+storage[i][j].amount-16;
+						storage[i][j].amount = 16;
+					}
+				}
+			}
+			return (foundspot ? null : item);
+		}
 	}
 	public static class Item {
+		public boolean ininventory = true;
+		public double pickupable = 0;
+		public Circle collision = new Circle(0,0,4);
+		public Vector3 gvect = new Vector3();
+		public double gvectdir = 0;
+
 		public int type;
 		public Texture text;
 		public boolean stackable;
@@ -500,8 +514,65 @@ public class SpaceshipGameManager extends Game {
 				}
 			}
 
-			if(stackable) amount = (int)(Math.random()*16)+1;
+			//if(stackable) amount = (int)(Math.random()*16)+1;
 			text = new Texture("item/"+type+".png");
+		}
+		public FrameworkMO.TextureSet updatePosition() {
+			gvect.add(SpaceMath.getNetGravity(new Vector3(collision.x,collision.y,0),PlanetList,.01f));
+			Planet nearplanet = SpaceMath.getClosestPlanet(new Vector3(collision.x,collision.y,0),PlanetList);
+			gvectdir = MovementMath.pointDir(new Vector3(collision.x,collision.y,0), nearplanet.getPosition());
+
+			if(pickupable>=0) {
+				pickupable-=Gdx.graphics.getDeltaTime();
+			}
+
+			Circle col = MovementMath.DuplicateCirc(collision);
+			if (MovementMath.overlaps(col, nearplanet.sprite.collision, new Vector3((float) (gvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0, 0))) {
+				double sign = Math.abs(gvect.x) / (gvect.x);
+				while (!MovementMath.overlaps(col, nearplanet.sprite.collision, new Vector3((float) (sign), 0, 0))) {
+					collision.x += sign;
+					col = MovementMath.DuplicateCirc(collision);
+				}
+				gvect.x = 0;
+			}
+
+			collision.x += gvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED;
+
+			col = MovementMath.DuplicateCirc(collision);
+			if (MovementMath.overlaps(col, nearplanet.sprite.collision, new Vector3(0, (float) (gvect.y * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0))) {
+				double sign = Math.abs(gvect.y) / (gvect.y);
+				while (!MovementMath.overlaps(col, nearplanet.sprite.collision, new Vector3(0, (float) (sign), 0))) {
+					collision.y += sign;
+					col = MovementMath.DuplicateCirc(collision);
+				}
+				gvect.y = 0;
+			}
+			collision.y += gvect.y * Gdx.graphics.getDeltaTime() * SLOWSPEED;
+
+			return new FrameworkMO.TextureSet(new TextureRegion(text),collision.x,collision.y);
+		}
+		public void drop() {
+			ItemList.add(this);
+			collision.setPosition((float)mainplayer.x,(float)mainplayer.y);
+			pickupable = .5;
+			ininventory = false;
+		}
+
+		public void drop(Vector3 pos) {
+			ItemList.add(this);
+			collision.setPosition((float)pos.x,(float)pos.y);
+			pickupable = .5;
+			ininventory = false;
+		}
+
+		public boolean gain() {
+			if(pickupable<=0) {
+				ItemList.remove(this);
+				mainplayer.inventory.addItem(this);
+				ininventory = true;
+				return true;
+			}
+			return false;
 		}
 	}
 
@@ -534,14 +605,13 @@ public class SpaceshipGameManager extends Game {
 
 			sprite = new FrameworkMO.SpriteObjectCirc("planet"+type+".png", pos.x, pos.y, radius, CollisionList);
 
-			x=sprite.x+radius;
-			y=sprite.y+radius;
+			x=pos.x;
+			y=pos.y;
 
-			for(int i = 0; i<1; i++) {
-				double ranangle = Math.toRadians(Math.random() * 360);
-				Vector3 ranpos = MovementMath.lengthDir(ranangle, radius-3);
-				Vector3 placepos = MovementMath.lengthDir(Math.toRadians(Math.toDegrees(ranangle)+90), 16);
-				TreeList.add(new FrameworkMO.DestroyableObject("deadtree.png", x + ranpos.x + placepos.x, y + ranpos.y + placepos.y, 16, 32, 0, 0, Math.toDegrees(ranangle)-90, null));
+			for(int i = 0; i<50; i++) {
+				double ranangle = Math.random() * 360;
+				Vector3 ranpos = MovementMath.lengthDir(ranangle, radius+29);
+				TreeList.add(new FrameworkMO.DestroyableObject("deadtree.png", x + ranpos.x, y + ranpos.y, 16, 64, 0, 0, ranangle, null));
 			}
 
 			PlanetList.add(this);

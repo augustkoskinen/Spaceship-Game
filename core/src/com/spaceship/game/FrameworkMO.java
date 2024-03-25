@@ -1,41 +1,17 @@
 package com.spaceship.game;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.controllers.Controller;
-import com.badlogic.gdx.controllers.Controllers;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import java.util.ArrayList;
-import java.util.Random;
 
 public class FrameworkMO {
-    //draws sprites with depth layering
-    public static void DrawWithLayering(SpriteBatch spritebatch, ArrayList<TextureSet> list) {
-        ArrayList<TextureSet> textlist = new ArrayList<TextureSet>();
-        for (TextureSet textureSet : list) {
-            double tempdepth = textureSet.depth;
-            int ind = textlist.size();
-            while (ind > 0 && tempdepth < textlist.get(ind - 1).depth) {
-                ind--;
-            }
-            ind = Math.max(0, ind);
-            textlist.add(ind, textureSet);
-        }
-        spritebatch.begin();
-        for (int i = 0; i < list.size(); i++) {
-            if (textlist.get(i).texture != null)
-                spritebatch.draw(textlist.get(i).texture, (float) (textlist.get(i).x), (float) (textlist.get(i).y), textlist.get(i).texture.getRegionWidth() / 2f, textlist.get(i).texture.getRegionHeight() / 2f, textlist.get(i).texture.getRegionWidth(), textlist.get(i).texture.getRegionHeight(), 1, 1, (float) Math.toDegrees(textlist.get(i).rotation));
-        }
-        spritebatch.end();
-    }
-
     //class for sprites w/ a hitbox
     public static class SpriteObjectSqr {
         public Texture texture;
@@ -47,28 +23,6 @@ public class FrameworkMO {
         public double coloffy = 0;
         public double rotation = 0;
 
-        public SpriteObjectSqr(String texturepath, double xpos, double ypos, double colwidth, double colheight, double coladdx, double coladdy, ArrayList collist) {
-            if (texturepath.isEmpty()) {
-                texture = new Texture(Gdx.files.internal("empty.png"));
-            } else {
-                texture = new Texture(texturepath);
-            }
-            x = xpos;
-            y = ypos;
-            this.depth = ypos;
-            collision.x = (float) xpos;
-            collision.y = (float) ypos;
-            collision.height = (float) colheight;
-            collision.width = (float) colwidth;
-            collision.x += coladdx;
-            collision.y += coladdy;
-            if (collist!=null) {
-                coloffx = coladdx;
-                coloffy = coladdy;
-                collist.add(collision);
-            }
-        }
-
         public SpriteObjectSqr(String texturepath, double xpos, double ypos, double colwidth, double colheight, double coladdx, double coladdy, double rot, ArrayList collist) {
             if (texturepath.isEmpty()) {
                 texture = new Texture(Gdx.files.internal("empty.png"));
@@ -78,18 +32,18 @@ public class FrameworkMO {
             x = xpos;
             y = ypos;
             this.depth = ypos;
-            rotation = rot;
-            collision.x = (float) xpos;
-            collision.y = (float) ypos;
             collision.height = (float) colheight;
             collision.width = (float) colwidth;
-            collision.x += coladdx;
-            collision.y += coladdy;
+            collision.x = (float)(xpos + coladdx);
+            collision.y = (float)(ypos + coladdy);
+
             if (collist!=null) {
                 coloffx = coladdx;
                 coloffy = coladdy;
                 collist.add(collision);
             }
+
+            rotate(rot);
         }
 
         public void setPosition(double xpos, double ypos) {
@@ -98,18 +52,18 @@ public class FrameworkMO {
             y = ypos;
         }
 
+        public void addPosition(Vector3 movevect) {
+            x = x + movevect.x;
+            y = y + movevect.y;
+            collision.setPosition((float) (x + coloffx), (float) (y + coloffy));
+        }
+
         public Vector3 getPosition() {
             return new Vector3((float) x, (float) y, 0);
         }
 
-        public void addPosition(Vector3 movevect) {
-            collision.setPosition((float) (x + movevect.x + coloffx), (float) (y + movevect.y + coloffy));
-            x = x + movevect.x;
-            y = y + movevect.y;
-        }
-
-        public void changeTexture(String texturepath) {
-            texture = new Texture(Gdx.files.internal(texturepath));
+        public void rotate(double r) {
+            rotation = r;
         }
     }
 
@@ -120,12 +74,13 @@ public class FrameworkMO {
             super(texturepath, xpos, ypos, colwidth, colheight, coladdx, coladdy, rot, collist);
             health = 5;
         }
-        public boolean checkDestroyable(SpaceshipGameManager.Player player, ArrayList<ParticleSet> ParticleList, ArrayList<SpaceshipGameManager.Planet> PlanetList, boolean paused) {
-            if(MovementMath.overlaps(player.sprite.collision,collision,rotation,Math.toDegrees(player.gpulldir)+180+45)&& player.justclicked && !paused) {
+        public boolean checkDestroyable(SpaceshipGameManager.Player player, SpaceshipGameManager manager) {
+            if(MovementMath.pointDis(player.getPosition(),getPosition())<64 && MovementMath.overlaps(player.sprite.collision, collision, rotation) && player.justclicked && !manager.pause) {
                 player.justclicked = false;
                 health--;
-                Vector3 placepos = MovementMath.lengthDir(Math.toRadians(rotation+63.4349488229), 35.77708764);
-                ParticleList.add(new FrameworkMO.ParticleSet(0,MovementMath.addVect(getPosition(),new Vector3(placepos.x,placepos.y,0)),PlanetList));
+                manager.ParticleList.add(new FrameworkMO.ParticleSet(0,getPosition(),manager.PlanetList));
+                SpaceshipGameManager.Item additem = new SpaceshipGameManager.Item(0);
+                additem.drop(MovementMath.addVect(getPosition(), MovementMath.lengthDir(Math.random()*360,8)));
             }
 
             return (health>0);
@@ -137,8 +92,8 @@ public class FrameworkMO {
         Circle collision = new Circle();
         double x = 0;
         double y = 0;
-        double radius = 0;
         double depth = 0;
+        double rotation = 0;
 
         public SpriteObjectCirc(String texturepath, double xpos, double ypos, double colrad, ArrayList collist) {
             if (texturepath.isEmpty()) {
@@ -148,41 +103,31 @@ public class FrameworkMO {
             }
             this.depth = ypos;
 
-            collision.x = (float) xpos;
-            collision.y = (float) ypos;
-            x = xpos+radius;
-            y = ypos+radius;
-            radius = colrad;
+            collision.x = (float)(xpos);
+            collision.y = (float)(ypos);
+            collision.radius = (float)colrad;
+            x = xpos;
+            y = ypos;
 
             if (collist!=null) {
-                collision.radius = (float)colrad;
                 collist.add(collision);
             }
         }
 
         public void setPosition(double xpos, double ypos) {
             collision.setPosition((float) (xpos), (float) (ypos));
-            x = xpos+radius;
-            y = ypos+radius;
+            x = xpos;
+            y = ypos;
+        }
+
+        public void addPosition(Vector3 movevect) {
+            x += movevect.x;
+            y += movevect.y;
+            collision.setPosition((float)(x), (float)(y));
         }
 
         public Vector3 getPosition() {
             return new Vector3((float)(x), (float)(y), 0);
-        }
-
-        public void addPosition(Vector3 movevect) {
-            collision.setPosition(collision.x + movevect.x, collision.y + movevect.y);
-            x += movevect.x;
-            y += movevect.y;
-        }
-        public void addPosition(double x, double y) {
-            collision.setPosition(collision.x + (float) x, collision.y + (float) y);
-            this.x += x;
-            this.y += y;
-        }
-
-        public void changeTexture(String texturepath) {
-            texture = new Texture(Gdx.files.internal(texturepath));
         }
     }
 
@@ -193,7 +138,7 @@ public class FrameworkMO {
                 case 0 : {
                     int pcount = (int)(Math.random()*5)+30;
                     for (int i = 0; i< pcount; i++) {
-                        ParticleList.add(new Particle(type, pos, planetlist));
+                        ParticleList.add(new Particle(type, MovementMath.addVect(pos, MovementMath.lengthDir(Math.random()*360,2)), planetlist));
                     }
                     break;
                 }
@@ -231,8 +176,8 @@ public class FrameworkMO {
                         sprite.time = ((int)(Math.random()*4)+1)*0.1f;
                         life = Math.random()*.3;
                         position = pos;
-                        gravitypull = Math.toDegrees(MovementMath.pointDir(pos,SpaceMath.getClosestPlanet(pos,planetlist).getPosition()));
-                        velocity = MovementMath.addVect(MovementMath.lengthDir(Math.toRadians(gravitypull+movesign*90),(Math.random()*1.8)+0.2f),MovementMath.lengthDir(Math.toRadians(gravitypull+180),(Math.random()*80)+0.5f));
+                        gravitypull = MovementMath.pointDir(pos,SpaceMath.getClosestPlanet(pos,planetlist).getPosition());
+                        velocity = MovementMath.addVect(MovementMath.lengthDir(gravitypull+movesign*90,(Math.random()*1.8)+0.2f),MovementMath.lengthDir(gravitypull+180,(Math.random()*80)+0.5f));
                         movesign = (int)(Math.random()*2) == 0 ? -1 : 1;
                         maxlife = 0.7;
                     }
@@ -246,8 +191,8 @@ public class FrameworkMO {
                 return false;
             } else {
                 position = MovementMath.addVect(new Vector3(velocity.x*Gdx.graphics.getDeltaTime(),velocity.y*Gdx.graphics.getDeltaTime(),0),position);
-                Vector3 addside = MovementMath.lengthDir(Math.toRadians(gravitypull+movesign*-1*90),1);
-                Vector3 addup = MovementMath.lengthDir(Math.toRadians(gravitypull),3);
+                Vector3 addside = MovementMath.lengthDir(gravitypull+movesign*-1*90,1);
+                Vector3 addup = MovementMath.lengthDir(gravitypull,3);
                 velocity = MovementMath.addVect(velocity,addside,addup);
             }
             return true;

@@ -13,6 +13,9 @@ import com.badlogic.gdx.utils.ScreenUtils;
 
 import java.util.ArrayList;
 
+import static com.spaceship.game.MovementMath.hyp;
+import static com.spaceship.game.MovementMath.lengthDir;
+
 public class GameScreen implements Screen {
     //320, 160 spawn
     private OrthographicCamera cam;
@@ -42,20 +45,21 @@ public class GameScreen implements Screen {
         //clears screen
         ScreenUtils.clear(0, 0, 0, 1, true);
 
-        double camdis = MovementMath.pointDis(cam.position, new Vector3((float) (player.x), (float) (player.y), 0));
-        double camdir = MovementMath.pointDir(cam.position, new Vector3((float) (player.x), (float) (player.y), 0));
-        Vector3 campos = MovementMath.lengthDir(camdir, camdis);
+        double camdis = MovementMath.pointDis(cam.position, player.getPosition());
+        double camdir = MovementMath.pointDir(cam.position, player.getPosition());
+
+        Vector3 campos = lengthDir(camdir, camdis);
         cam.position.set(cam.position.x + campos.x * .05f, cam.position.y + campos.y * .05f, 0);
         cam.zoom = 0.75f;
 
-        if(prevrot<-90&&Math.toDegrees(player.gpulldir)>90){
-            camrot = (camrot+360+Math.toDegrees(player.gpulldir))*0.5;
-        } else if ((prevrot>90&&Math.toDegrees(player.gpulldir)<-90)) {
-            camrot = (camrot-360+Math.toDegrees(player.gpulldir))*0.5;
+        if(prevrot<-90&&player.gpulldir>90){
+            camrot = (camrot+360+player.gpulldir)*0.5;
+        } else if ((prevrot>90&&player.gpulldir<-90)) {
+            camrot = (camrot-360+player.gpulldir)*0.5;
         } else {
-            camrot = (camrot+Math.toDegrees(player.gpulldir))*0.5;
+            camrot = (camrot+player.gpulldir)*0.5;
         }
-        prevrot = Math.toDegrees(player.gpulldir);
+        prevrot = player.gpulldir;
 
         MovementMath.setCamPos(cam, camrot);
 
@@ -67,22 +71,23 @@ public class GameScreen implements Screen {
         for(SpaceshipGameManager.Planet planet : manager.PlanetList) {
             for(int i = 0; i<planet.TreeList.size();i++) {
                 Texture text = planet.TreeList.get(i).texture;
-                boolean alive = planet.TreeList.get(i).checkDestroyable(player,manager.ParticleList,manager.PlanetList,manager.pause);
+                boolean alive = planet.TreeList.get(i).checkDestroyable(player,manager);
                 if(alive) {
-                    batch.draw(new TextureRegion(text),(float)(planet.TreeList.get(i).x),(float)(planet.TreeList.get(i).y),0,0,text.getWidth(),text.getHeight(),1,1,(float)(planet.TreeList.get(i).rotation));
+                    Vector3 movevect = MovementMath.lengthDir(MovementMath.pointDir(new Vector3(text.getWidth()/2,text.getHeight()/2,0),new Vector3()),MovementMath.pointDis(new Vector3(text.getWidth()/2,text.getHeight()/2,0),new Vector3()));
+                    batch.draw(new TextureRegion(text),(float)(planet.TreeList.get(i).x+movevect.x),(float)(planet.TreeList.get(i).y+movevect.y),text.getWidth()/2,text.getHeight()/2,text.getWidth(),text.getHeight(),1,1,(float)(planet.TreeList.get(i).rotation-90));
                 } else {
                     planet.TreeList.remove(i);
                     i--;
                 }
             }
 
-            FrameworkMO.TextureSet text = new FrameworkMO.TextureSet(planet.updatePos(),planet.sprite.x,planet.sprite.y,planet.sprite.depth);
+            FrameworkMO.TextureSet textset = new FrameworkMO.TextureSet(planet.updatePos(),planet.sprite.x,planet.sprite.y,planet.sprite.depth);
             batch.draw(
-                    text.texture,
-                    (float)(text.x),
-                    (float)(text.y),
-                    planet.sprite.texture.getWidth(),
-                    planet.sprite.texture.getHeight(),
+                    textset.texture,
+                    (float)(textset.x-planet.radius),
+                    (float)(textset.y-planet.radius),
+                    planet.sprite.texture.getWidth()/2,
+                    planet.sprite.texture.getHeight()/2,
                     planet.sprite.texture.getWidth(),
                     planet.sprite.texture.getHeight(),
                     1,
@@ -102,8 +107,8 @@ public class GameScreen implements Screen {
                         textset.texture,
                         (float) (textset.x),
                         (float) (textset.y),
-                        textset.texture.getRegionWidth(),
-                        textset.texture.getRegionHeight(),
+                        textset.texture.getRegionWidth()/2,
+                        textset.texture.getRegionHeight()/2,
                         textset.texture.getRegionWidth(),
                         textset.texture.getRegionHeight(),
                         1,
@@ -115,9 +120,20 @@ public class GameScreen implements Screen {
         }
 
         TextureRegion playertext = player.updatePlayerPos();
-        batch.draw(playertext,(float)(player.sprite.x-player.sprite.radius), (float)(player.sprite.y-player.sprite.radius),playertext.getRegionWidth()/2,playertext.getRegionHeight()/2,playertext.getRegionWidth(),playertext.getRegionHeight(),1,1,(float) player.moverot);
+        batch.draw(playertext,(float)(player.sprite.x-player.sprite.collision.radius), (float)(player.sprite.y-player.sprite.collision.radius),playertext.getRegionWidth()/2,playertext.getRegionHeight()/2,playertext.getRegionWidth(),playertext.getRegionHeight(),1,1,(float) player.moverot);
         FrameworkMO.TextureSet eyetext = player.getEyeText();
-        batch.draw(eyetext.texture,(float)(eyetext.x-player.sprite.radius),(float)(eyetext.y-player.sprite.radius),eyetext.texture.getRegionWidth()/2,eyetext.texture.getRegionHeight()/2,eyetext.texture.getRegionWidth(),eyetext.texture.getRegionHeight(),1,1,(float)Math.toDegrees(eyetext.rotation));
+        batch.draw(eyetext.texture,(float)(eyetext.x-eyetext.texture.getRegionWidth()/2),(float)(eyetext.y-eyetext.texture.getRegionWidth()/2),eyetext.texture.getRegionWidth()/2,eyetext.texture.getRegionHeight()/2,eyetext.texture.getRegionWidth(),eyetext.texture.getRegionHeight(),1,1,(float)eyetext.rotation);
+
+        for(int i = 0; i<manager.ItemList.size();i++) {
+            FrameworkMO.TextureSet textset =  manager.ItemList.get(i).updatePosition();
+            boolean pickedup = false;
+            if(MovementMath.overlaps(player.sprite.collision, manager.ItemList.get(i).collision)) {
+                pickedup = manager.ItemList.get(i).gain();
+            }
+            if(textset!=null&&!pickedup) {
+                batch.draw(textset.texture,(float)(textset.x-textset.texture.getRegionWidth()/2),(float)(textset.y-textset.texture.getRegionHeight()/2),textset.texture.getRegionWidth()/2,textset.texture.getRegionHeight()/2,textset.texture.getRegionWidth(),textset.texture.getRegionHeight(), .5f,.5f, (float) manager.ItemList.get(i).gvectdir+90);
+            }
+        }
 
         for(int i = 0; i<manager.PoofCloudList.size();i++) {
             FrameworkMO.TextureSet text = manager.PoofCloudList.get(i).updateTime();
