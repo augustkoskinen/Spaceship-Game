@@ -127,6 +127,24 @@ public class MovementMath extends ApplicationAdapter {
         return overlaps(rect, newcirc);
     }
 
+    public static boolean overlaps(Circle circ, Rectangle rect, double rectrot, Vector3 offset){
+        Circle newcirc = MovementMath.DuplicateCirc(circ);
+        Vector3 newpos = (MovementMath.addVect(MovementMath.lengthDir(
+                MovementMath.pointDir(new Vector3(rect.x+offset.x, rect.y+offset.y, 0), new Vector3(circ.x, circ.y, 0))-(rectrot-90),
+                MovementMath.pointDis(new Vector3(rect.x+offset.x, rect.y+offset.y, 0), new Vector3(circ.x, circ.y, 0))
+        ), new Vector3(rect.x+offset.x, rect.y+offset.y, 0)));
+
+        Vector3 addnewpos = MovementMath.lengthDir(
+                MovementMath.pointDir(new Vector3(newcirc.x, newcirc.y, 0),newpos),
+                MovementMath.pointDis(new Vector3(newcirc.x, newcirc.y, 0),newpos)
+        );
+
+        newcirc.x += addnewpos.x;
+        newcirc.y += addnewpos.y;
+
+        return overlaps(rect, newcirc);
+    }
+
 
     static public boolean overlaps(Rectangle rect, Circle circ){
         double circDisX = Math.abs((circ.x) - (rect.x));

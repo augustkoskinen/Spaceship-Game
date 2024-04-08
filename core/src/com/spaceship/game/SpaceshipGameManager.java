@@ -9,6 +9,7 @@ import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import sun.jvm.hotspot.gc.shared.Space;
 
 import java.util.ArrayList;
 
@@ -28,6 +29,7 @@ public class SpaceshipGameManager extends Game {
 	//lists
 	static ArrayList<PoofCloud> PoofCloudList = new ArrayList<>();
 	static ArrayList<Planet> PlanetList = new ArrayList<>();
+	static ArrayList<Rocket> RocketList = new ArrayList<>();
 	static ArrayList<FrameworkMO.SpriteObjectSqr> SprObjSqrList = new ArrayList<>();
 	static ArrayList<FrameworkMO.SpriteObjectCirc> SprObjCircList = new ArrayList<>();
 	static ArrayList<FrameworkMO.ParticleSet> ParticleList = new ArrayList<>();
@@ -47,6 +49,7 @@ public class SpaceshipGameManager extends Game {
 		batch = new SpriteBatch();
 		mainplayer = new Player(new Vector3(512,1032,0));
 		new Planet(new Vector3(512,512,0),1);
+		RocketList.add(new Rocket(mainplayer.getPosition(),180));
 
 		this.setScreen(new GameScreen(this));
 	}
@@ -83,6 +86,7 @@ public class SpaceshipGameManager extends Game {
 		public double moverot = 0;
 		public double lastdir = 1;
 		public double gpulldir;
+		public Rocket loadedrocket = null;
 
 		//jump
 		public int jumpcount = 1;
@@ -117,7 +121,7 @@ public class SpaceshipGameManager extends Game {
 			Circle playercol = MovementMath.DuplicateCirc(sprite.collision);
 			playertext = new TextureRegion(new Texture("p" + skintype + "body.png"));
 
-			if (!pause) {
+			if (!pause&&loadedrocket==null) {
 				gpulldir = MovementMath.pointDir(sprite.getPosition(),SpaceMath.getClosestPlanet(sprite.getPosition(),PlanetList).getPosition());
 
 				double multamount = Gdx.graphics.getDeltaTime() * SLOWSPEED;
@@ -218,7 +222,8 @@ public class SpaceshipGameManager extends Game {
 					jumpdiradd = 0;
 				}
 			}
-
+			if(loadedrocket!=null)
+				return null;
 			return playertext;
 		}
 
@@ -554,7 +559,7 @@ public class SpaceshipGameManager extends Game {
 		public void drop() {
 			ItemList.add(this);
 			collision.setPosition((float)mainplayer.x,(float)mainplayer.y);
-			pickupable = .5;
+			pickupable = 2;
 			ininventory = false;
 		}
 
@@ -674,6 +679,106 @@ public class SpaceshipGameManager extends Game {
 				return new FrameworkMO.TextureSet(animation.updateTime(1),pos.x,pos.y,100000,(double)Math.toRadians(dir));
 			else
 				return new FrameworkMO.TextureSet(animation.getAnim(),pos.x,pos.y,100000,(double)Math.toRadians(dir));
+		}
+	}
+
+	public static class Rocket {
+		boolean loaded = false;
+		public Player player = null;
+		FrameworkMO.SpriteObjectSqr sprite;
+		public Vector3 position;
+		public Vector3 velocity;
+		public double thrust = 0;
+		public double rot = 0;
+		public double gpointdir = 0;
+		public boolean onground = false;
+		public Rocket(Vector3 pos, double rot) {
+			this.rot = rot+90;
+			position = pos.add(MovementMath.lengthDir(rot-90,24));
+			sprite = new FrameworkMO.SpriteObjectSqr("rocket.png",pos.x,pos.y,32,64,0,0, rot+90, null);
+			velocity = new Vector3();
+
+		}
+		public FrameworkMO.TextureSet updateSpeed() {
+			Vector3 gvectdir = SpaceMath.getNetGravity(position, PlanetList, 2);
+			gpointdir = MovementMath.pointDir(position, SpaceMath.getClosestPlanet(position,PlanetList).getPosition());
+			Planet nearplanet = SpaceMath.getClosestPlanet(position, PlanetList);
+			onground = MovementMath.overlaps(nearplanet.sprite.collision,sprite.collision,gpointdir,MovementMath.lengthDir(gpointdir,1));
+			if(loaded) {
+				if (Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
+					thrust += 20;
+				}
+				thrust *= .5;
+				if (Gdx.input.isKeyPressed(Input.Keys.D)&&!onground) {
+					rot -= 5;
+				}
+				if (Gdx.input.isKeyPressed(Input.Keys.A)&&!onground) {
+					rot += 5;
+				}
+
+				velocity = MovementMath.addVect(MovementMath.lengthDir(rot+180, thrust), velocity);
+
+				Vector3 netvect = new Vector3(gvectdir.x+velocity.x,gvectdir.y+velocity.y,0);
+				if(thrust>10) {
+					netvect = new Vector3(velocity.x,velocity.y,0);
+				}
+
+				Rectangle col = MovementMath.DuplicateRect(sprite.collision);
+				if (MovementMath.overlaps(nearplanet.sprite.collision, col, rot, new Vector3((float) (netvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0, 0))) {
+					double sign = Math.abs(netvect.x) / (netvect.x);
+					double sum = 0;
+					if(!Double.isNaN(sign))
+						while (!MovementMath.overlaps(nearplanet.sprite.collision, col, rot, new Vector3((float) (sign), 0, 0))) {
+							sprite.addPosition(new Vector3((float)sign,0,0));
+							col = MovementMath.DuplicateRect(sprite.collision);
+							sum+=sign;
+							if(sum>netvect.x) break;
+						}
+					netvect.x = 0;
+				}
+
+				sprite.addPosition(new Vector3((float)(netvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED),0,0));
+
+				col = MovementMath.DuplicateRect(sprite.collision);
+				if (MovementMath.overlaps(nearplanet.sprite.collision, col, rot, new Vector3(0, (float) (netvect.y * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0))) {
+					double sign = Math.abs(netvect.y) / (netvect.y);
+					double sum = 0;
+					if(!Double.isNaN(sign))
+						while (!MovementMath.overlaps(nearplanet.sprite.collision, col, rot, new Vector3(0, (float) (sign), 0))) {
+							sprite.addPosition(new Vector3(0, (float)sign,0));
+							col = MovementMath.DuplicateRect(sprite.collision);
+							sum+=sign;
+							if(sum>netvect.y*Gdx.graphics.getDeltaTime()) break;
+						}
+					netvect.y = 0;
+				}
+				sprite.addPosition(new Vector3(0,(float)(netvect.y * Gdx.graphics.getDeltaTime() * SLOWSPEED),0));
+
+				velocity.x *= .975f;
+				velocity.y *= .975f;
+
+				position = sprite.getPosition();
+				sprite.rotation = rot;
+			} else {
+				if(MovementMath.overlaps(mainplayer.sprite.collision, sprite.collision, rot)&&Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+					load(mainplayer);
+				}
+			}
+			return new FrameworkMO.TextureSet(new TextureRegion(sprite.texture),position.x,position.y,-position.y,rot);
+		}
+		public void load(Player player) {
+			if(!loaded) {
+				this.player = player;
+				loaded = true;
+				player.loadedrocket = this;
+			}
+		}
+
+		public void unload(Player player) {
+			if(!loaded) {
+				this.player = player;
+				loaded = true;
+			}
 		}
 	}
 }

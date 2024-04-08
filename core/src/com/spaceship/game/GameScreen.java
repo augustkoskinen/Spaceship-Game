@@ -45,12 +45,12 @@ public class GameScreen implements Screen {
         //clears screen
         ScreenUtils.clear(0, 0, 0, 1, true);
 
-        double camdis = MovementMath.pointDis(cam.position, player.getPosition());
-        double camdir = MovementMath.pointDir(cam.position, player.getPosition());
+        double camdis = MovementMath.pointDis(cam.position, player.loadedrocket!=null ? player.loadedrocket.sprite.getPosition() : player.getPosition());
+        double camdir = MovementMath.pointDir(cam.position, player.loadedrocket!=null ? player.loadedrocket.sprite.getPosition() : player.getPosition());
 
         Vector3 campos = lengthDir(camdir, camdis);
         cam.position.set(cam.position.x + campos.x * .05f, cam.position.y + campos.y * .05f, 0);
-        cam.zoom = 0.75f;
+        cam.zoom = player.loadedrocket!=null ? 3 : 0.75f;
 
         if(prevrot<-90&&player.gpulldir>90){
             camrot = (camrot+360+player.gpulldir)*0.5;
@@ -120,9 +120,11 @@ public class GameScreen implements Screen {
         }
 
         TextureRegion playertext = player.updatePlayerPos();
-        batch.draw(playertext,(float)(player.sprite.x-player.sprite.collision.radius), (float)(player.sprite.y-player.sprite.collision.radius),playertext.getRegionWidth()/2,playertext.getRegionHeight()/2,playertext.getRegionWidth(),playertext.getRegionHeight(),1,1,(float) player.moverot);
-        FrameworkMO.TextureSet eyetext = player.getEyeText();
-        batch.draw(eyetext.texture,(float)(eyetext.x-eyetext.texture.getRegionWidth()/2),(float)(eyetext.y-eyetext.texture.getRegionWidth()/2),eyetext.texture.getRegionWidth()/2,eyetext.texture.getRegionHeight()/2,eyetext.texture.getRegionWidth(),eyetext.texture.getRegionHeight(),1,1,(float)eyetext.rotation);
+        if(playertext!=null) {
+            batch.draw(playertext, (float) (player.sprite.x - player.sprite.collision.radius), (float) (player.sprite.y - player.sprite.collision.radius), playertext.getRegionWidth() / 2, playertext.getRegionHeight() / 2, playertext.getRegionWidth(), playertext.getRegionHeight(), 1, 1, (float) player.moverot);
+            FrameworkMO.TextureSet eyetext = player.getEyeText();
+            batch.draw(eyetext.texture, (float) (eyetext.x - eyetext.texture.getRegionWidth() / 2), (float) (eyetext.y - eyetext.texture.getRegionWidth() / 2), eyetext.texture.getRegionWidth() / 2, eyetext.texture.getRegionHeight() / 2, eyetext.texture.getRegionWidth(), eyetext.texture.getRegionHeight(), 1, 1, (float) eyetext.rotation);
+        }
 
         for(int i = 0; i<manager.ItemList.size();i++) {
             FrameworkMO.TextureSet textset =  manager.ItemList.get(i).updatePosition();
@@ -139,6 +141,15 @@ public class GameScreen implements Screen {
             FrameworkMO.TextureSet text = manager.PoofCloudList.get(i).updateTime();
             if(text!=null) {
                 batch.draw(text.texture,(float)(text.x),(float)(text.y),text.texture.getRegionWidth()/2,text.texture.getRegionHeight()/2,text.texture.getRegionWidth(),text.texture.getRegionHeight(),1,1,(float)Math.toDegrees(text.rotation));
+            } else
+                i--;
+        }
+
+        for(int i = 0; i<manager.RocketList.size();i++) {
+            FrameworkMO.TextureSet text = manager.RocketList.get(i).updateSpeed();
+            if(text!=null) {
+                Vector3 movevect = MovementMath.lengthDir(MovementMath.pointDir(new Vector3(text.texture.getRegionWidth()/2,text.texture.getRegionHeight()/2,0),new Vector3()),MovementMath.pointDis(new Vector3(text.texture.getRegionWidth()/2,text.texture.getRegionHeight()/2,0),new Vector3()));
+                batch.draw(text.texture,(float)(text.x+movevect.x),(float)(text.y+movevect.y),text.texture.getRegionWidth()/2,text.texture.getRegionHeight()/2,text.texture.getRegionWidth(),text.texture.getRegionHeight(),1,1,(float)text.rotation+90);
             } else
                 i--;
         }
