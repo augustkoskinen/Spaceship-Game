@@ -1,7 +1,9 @@
 package com.spaceship.game;
 
 import com.badlogic.gdx.*;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.TextureData;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -19,6 +21,8 @@ public class SpaceshipGameManager extends Game {
 	public static boolean pause;
 	public String launcher;
 	public static Player mainplayer;
+	public static boolean canboardship;
+	public static boolean canunboardship;
 
 	//consts
 	public static final double MULT_AMOUNT = 55;
@@ -108,7 +112,7 @@ public class SpaceshipGameManager extends Game {
 		public TextureRegion updatePlayerPos() {
 			justclicked = Gdx.input.justTouched();
 
-			if(Gdx.input.isKeyJustPressed(Input.Keys.TAB)) {
+			if(Gdx.input.isKeyJustPressed(Input.Keys.TAB)&&!canboardship&&!canunboardship) {
 				inventory.inventoryopen = !inventory.inventoryopen;
 				pause = inventory.inventoryopen;
 			}
@@ -683,6 +687,7 @@ public class SpaceshipGameManager extends Game {
 	}
 
 	public static class Rocket {
+		public FrameworkMO.ParticleSet flamePS;
 		boolean loaded = false;
 		public Player player = null;
 		FrameworkMO.SpriteObjectSqr sprite;
@@ -697,6 +702,7 @@ public class SpaceshipGameManager extends Game {
 			position = pos.add(MovementMath.lengthDir(rot-90,24));
 			sprite = new FrameworkMO.SpriteObjectSqr("rocket.png",pos.x,pos.y,32,64,0,0, rot+90, null);
 			velocity = new Vector3();
+			flamePS = new FrameworkMO.ParticleSet(1,position,PlanetList,rot);
 
 		}
 		public FrameworkMO.TextureSet updateSpeed() {
@@ -704,66 +710,88 @@ public class SpaceshipGameManager extends Game {
 			gpointdir = MovementMath.pointDir(position, SpaceMath.getClosestPlanet(position,PlanetList).getPosition());
 			Planet nearplanet = SpaceMath.getClosestPlanet(position, PlanetList);
 			onground = MovementMath.overlaps(nearplanet.sprite.collision,sprite.collision,gpointdir,MovementMath.lengthDir(gpointdir,1));
+			canboardship = false;
+			canunboardship = false;
+
 			if(loaded) {
 				if (Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
 					thrust += 20;
+					int repetitions = (int)(Math.random()*20);
+					for (int i = 0; i < repetitions; i++)
+						flamePS.addParticle(1, MovementMath.addVect(position,MovementMath.lengthDir(rot,32)), PlanetList, rot);
 				}
 				thrust *= .5;
-				if (Gdx.input.isKeyPressed(Input.Keys.D)&&!onground) {
+				if (Gdx.input.isKeyPressed(Input.Keys.D) && !onground) {
 					rot -= 5;
 				}
-				if (Gdx.input.isKeyPressed(Input.Keys.A)&&!onground) {
+				if (Gdx.input.isKeyPressed(Input.Keys.A) && !onground) {
 					rot += 5;
 				}
 
-				velocity = MovementMath.addVect(MovementMath.lengthDir(rot+180, thrust), velocity);
+				velocity = MovementMath.addVect(MovementMath.lengthDir(rot + 180, thrust), velocity);
 
-				Vector3 netvect = new Vector3(gvectdir.x+velocity.x,gvectdir.y+velocity.y,0);
-				if(thrust>10) {
-					netvect = new Vector3(velocity.x,velocity.y,0);
+				if(loaded){
+					canunboardship = true;
+					if(Gdx.input.isKeyJustPressed(Input.Keys.TAB)&&!mainplayer.inventory.inventoryopen) {
+						unload();
+					}
 				}
-
-				Rectangle col = MovementMath.DuplicateRect(sprite.collision);
-				if (MovementMath.overlaps(nearplanet.sprite.collision, col, rot, new Vector3((float) (netvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0, 0))) {
-					double sign = Math.abs(netvect.x) / (netvect.x);
-					double sum = 0;
-					if(!Double.isNaN(sign))
-						while (!MovementMath.overlaps(nearplanet.sprite.collision, col, rot, new Vector3((float) (sign), 0, 0))) {
-							sprite.addPosition(new Vector3((float)sign,0,0));
-							col = MovementMath.DuplicateRect(sprite.collision);
-							sum+=sign;
-							if(sum>netvect.x) break;
-						}
-					netvect.x = 0;
-				}
-
-				sprite.addPosition(new Vector3((float)(netvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED),0,0));
-
-				col = MovementMath.DuplicateRect(sprite.collision);
-				if (MovementMath.overlaps(nearplanet.sprite.collision, col, rot, new Vector3(0, (float) (netvect.y * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0))) {
-					double sign = Math.abs(netvect.y) / (netvect.y);
-					double sum = 0;
-					if(!Double.isNaN(sign))
-						while (!MovementMath.overlaps(nearplanet.sprite.collision, col, rot, new Vector3(0, (float) (sign), 0))) {
-							sprite.addPosition(new Vector3(0, (float)sign,0));
-							col = MovementMath.DuplicateRect(sprite.collision);
-							sum+=sign;
-							if(sum>netvect.y*Gdx.graphics.getDeltaTime()) break;
-						}
-					netvect.y = 0;
-				}
-				sprite.addPosition(new Vector3(0,(float)(netvect.y * Gdx.graphics.getDeltaTime() * SLOWSPEED),0));
-
-				velocity.x *= .975f;
-				velocity.y *= .975f;
-
-				position = sprite.getPosition();
-				sprite.rotation = rot;
 			} else {
-				if(MovementMath.overlaps(mainplayer.sprite.collision, sprite.collision, rot)&&Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
-					load(mainplayer);
+				if(MovementMath.overlaps(mainplayer.sprite.collision, sprite.collision, rot)&&!loaded) {
+					canboardship = true;
+					if(Gdx.input.isKeyJustPressed(Input.Keys.TAB)&&!mainplayer.inventory.inventoryopen)
+						load(mainplayer);
+				}
+				rot = (rot+gpointdir)/2;
+				Vector3 escapepos = MovementMath.lengthDir(gpointdir+180,1);
+				while(MovementMath.overlaps(nearplanet.sprite.collision, sprite.collision, rot)) {
+					position.add(escapepos);
+					sprite.addPosition(escapepos);
 				}
 			}
+
+			Vector3 netvect = new Vector3(gvectdir.x + velocity.x, gvectdir.y + velocity.y, 0);
+			if (thrust > 10) {
+				netvect = new Vector3(velocity.x, velocity.y, 0);
+			}
+
+			Rectangle col = MovementMath.DuplicateRect(sprite.collision);
+			if (MovementMath.overlaps(nearplanet.sprite.collision, col, rot, new Vector3((float) (netvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0, 0))) {
+				double sign = Math.abs(netvect.x) / (netvect.x);
+				double sum = 0;
+				if(!Double.isNaN(sign))
+					while (!MovementMath.overlaps(nearplanet.sprite.collision, col, rot, new Vector3((float) (sign), 0, 0))) {
+						sprite.addPosition(new Vector3((float)sign,0,0));
+						col = MovementMath.DuplicateRect(sprite.collision);
+						sum+=sign;
+						if(sum>netvect.x) break;
+					}
+				netvect.x = 0;
+			}
+
+			sprite.addPosition(new Vector3((float)(netvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED),0,0));
+
+			col = MovementMath.DuplicateRect(sprite.collision);
+			if (MovementMath.overlaps(nearplanet.sprite.collision, col, rot, new Vector3(0, (float) (netvect.y * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0))) {
+				double sign = Math.abs(netvect.y) / (netvect.y);
+				double sum = 0;
+				if(!Double.isNaN(sign))
+					while (!MovementMath.overlaps(nearplanet.sprite.collision, col, rot, new Vector3(0, (float) (sign), 0))) {
+						sprite.addPosition(new Vector3(0, (float)sign,0));
+						col = MovementMath.DuplicateRect(sprite.collision);
+						sum+=sign;
+						if(sum>netvect.y) break;
+					}
+				netvect.y = 0;
+			}
+			sprite.addPosition(new Vector3(0,(float)(netvect.y * Gdx.graphics.getDeltaTime() * SLOWSPEED),0));
+
+			velocity.x *= .975f;
+			velocity.y *= .975f;
+
+			position = sprite.getPosition();
+			sprite.rotation = rot;
+
 			return new FrameworkMO.TextureSet(new TextureRegion(sprite.texture),position.x,position.y,-position.y,rot);
 		}
 		public void load(Player player) {
@@ -771,13 +799,21 @@ public class SpaceshipGameManager extends Game {
 				this.player = player;
 				loaded = true;
 				player.loadedrocket = this;
+				sprite.texture = new Texture("rocketloaded.png");
+				player.jumpcount = 0;
 			}
 		}
 
-		public void unload(Player player) {
-			if(!loaded) {
-				this.player = player;
-				loaded = true;
+		public void unload() {
+			if(loaded) {
+				player.loadedrocket = null;
+				player.setPosition(position);
+				player.walkvect = new Vector3();
+				player.jumpvect = new Vector3();
+				player = null;
+				loaded = false;
+				velocity = new Vector3();
+				sprite.texture = new Texture("rocket.png");
 			}
 		}
 	}

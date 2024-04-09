@@ -23,6 +23,8 @@ public class GameScreen implements Screen {
     public double prevrot = 0;
     private SpaceshipGameManager manager;
     private SpriteBatch batch;
+    private Texture tabtoboard;
+    private Texture tabtoleave;
     private SpaceshipGameManager.Player player;
     public GameScreen (SpaceshipGameManager manager) {
         this.manager = manager;
@@ -32,6 +34,9 @@ public class GameScreen implements Screen {
     @Override
     public void show() {
         batch = new SpriteBatch();
+
+        tabtoboard = new Texture("boardaction.png");
+        tabtoleave = new Texture("leaveaction.png");
 
         // cam setup
         cam = new OrthographicCamera();
@@ -50,7 +55,7 @@ public class GameScreen implements Screen {
 
         Vector3 campos = lengthDir(camdir, camdis);
         cam.position.set(cam.position.x + campos.x * .05f, cam.position.y + campos.y * .05f, 0);
-        cam.zoom = player.loadedrocket!=null ? 3 : 0.75f;
+        cam.zoom = 1.5f;//player.loadedrocket!=null ? 3 : 0.75f;
 
         if(prevrot<-90&&player.gpulldir>90){
             camrot = (camrot+360+player.gpulldir)*0.5;
@@ -148,6 +153,23 @@ public class GameScreen implements Screen {
         for(int i = 0; i<manager.RocketList.size();i++) {
             FrameworkMO.TextureSet text = manager.RocketList.get(i).updateSpeed();
             if(text!=null) {
+                ArrayList<FrameworkMO.TextureSet> textlist = manager.RocketList.get(i).flamePS.getParticles();
+                if(textlist!=null) {
+                    for (FrameworkMO.TextureSet textset : textlist) {
+                        batch.draw(
+                                textset.texture,
+                                (float) (textset.x),
+                                (float) (textset.y),
+                                textset.texture.getRegionWidth() / 2,
+                                textset.texture.getRegionHeight() / 2,
+                                textset.texture.getRegionWidth(),
+                                textset.texture.getRegionHeight(),
+                                1,
+                                1,
+                                (float) textset.rotation
+                        );
+                    }
+                }
                 Vector3 movevect = MovementMath.lengthDir(MovementMath.pointDir(new Vector3(text.texture.getRegionWidth()/2,text.texture.getRegionHeight()/2,0),new Vector3()),MovementMath.pointDis(new Vector3(text.texture.getRegionWidth()/2,text.texture.getRegionHeight()/2,0),new Vector3()));
                 batch.draw(text.texture,(float)(text.x+movevect.x),(float)(text.y+movevect.y),text.texture.getRegionWidth()/2,text.texture.getRegionHeight()/2,text.texture.getRegionWidth(),text.texture.getRegionHeight(),1,1,(float)text.rotation+90);
             } else
@@ -155,6 +177,16 @@ public class GameScreen implements Screen {
         }
 
         batch.end();
+
+        if(manager.canboardship) {
+            manager.batch.begin();
+            manager.batch.draw(tabtoboard,Gdx.graphics.getWidth()/2-64,Gdx.graphics.getHeight()/2-16-64);
+            manager.batch.end();
+        } else if(manager.canunboardship) {
+            manager.batch.begin();
+            manager.batch.draw(tabtoleave,Gdx.graphics.getWidth()/2-64,Gdx.graphics.getHeight()/2-16-64);
+            manager.batch.end();
+        }
 
         player.inventory.drawInventory(manager.batch);
     }

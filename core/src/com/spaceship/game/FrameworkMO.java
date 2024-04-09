@@ -144,6 +144,17 @@ public class FrameworkMO {
                 }
             }
         }
+        public ParticleSet(int type, Vector3 pos, ArrayList<SpaceshipGameManager.Planet> planetlist, double rotation) {
+            switch (type) {
+                case 0 : {
+                    int pcount = (int)(Math.random()*5)+30;
+                    for (int i = 0; i< pcount; i++) {
+                        ParticleList.add(new Particle(type, MovementMath.addVect(pos, MovementMath.lengthDir(Math.random()*360,2)), planetlist));
+                    }
+                    break;
+                }
+            }
+        }
         public ArrayList<TextureSet> getParticles() {
             ArrayList<TextureSet> textlist = new ArrayList<>();
             for(int i = 0; i < ParticleList.size(); i++) {
@@ -158,6 +169,18 @@ public class FrameworkMO {
                 return null;
             return textlist;
         }
+        public void addParticle(int type, Vector3 pos, ArrayList<SpaceshipGameManager.Planet> planetlist, double rotation) {
+            switch (type) {
+                case 0 : {
+                    ParticleList.add(new Particle(type, pos, planetlist, rotation));
+                    break;
+                }
+                case 1 : {
+                    ParticleList.add(new Particle(type, MovementMath.addVect(pos,new Vector3((float)(Math.random()*10 - 5),(float)(Math.random()*10 - 5),0)), planetlist, rotation));
+                    break;
+                }
+            }
+        }
     }
     public static class Particle {
         public AnimationSet sprite = null;
@@ -167,33 +190,72 @@ public class FrameworkMO {
         Vector3 position = new Vector3();
         Vector3 velocity = new Vector3();
         double gravitypull = 0;
+        int type = -1;
         public Particle(int type, Vector3 pos, ArrayList<SpaceshipGameManager.Planet> planetlist) {
+            this.type = type;
             switch (type) {
                 case 0 : {
-                    int pcount = (int)(Math.random()*10);
-                    for (int i = 0; i< pcount; i++) {
-                        sprite = new AnimationSet("treeparticles.png",5,1,0.1f);
-                        sprite.time = ((int)(Math.random()*4)+1)*0.1f;
-                        life = Math.random()*.3;
-                        position = pos;
-                        gravitypull = MovementMath.pointDir(pos,SpaceMath.getClosestPlanet(pos,planetlist).getPosition());
-                        velocity = MovementMath.addVect(MovementMath.lengthDir(gravitypull+movesign*90,(Math.random()*1.8)+0.2f),MovementMath.lengthDir(gravitypull+180,(Math.random()*80)+0.5f));
-                        movesign = (int)(Math.random()*2) == 0 ? -1 : 1;
-                        maxlife = 0.7;
-                    }
+                    sprite = new AnimationSet("treeparticles.png",5,1,0.1f);
+                    sprite.time = ((int)(Math.random()*4)+1)*0.1f;
+                    life = Math.random()*.3;
+                    position = pos;
+                    gravitypull = MovementMath.pointDir(pos,SpaceMath.getClosestPlanet(pos,planetlist).getPosition());
+                    velocity = MovementMath.addVect(MovementMath.lengthDir(gravitypull+movesign*90,(Math.random()*1.8)+0.2f),MovementMath.lengthDir(gravitypull+180,(Math.random()*80)+0.5f));
+                    movesign = (int)(Math.random()*2) == 0 ? -1 : 1;
+                    maxlife = 0.7;
+                    break;
+                }
+            }
+        }
+        public Particle(int type, Vector3 pos, ArrayList<SpaceshipGameManager.Planet> planetlist, double rotation) {
+            this.type = type;
+            switch (type) {
+                case 0 : {
+                    sprite = new AnimationSet("treeparticles.png",5,1,0.1f);
+                    sprite.time = ((int)(Math.random()*4)+1)*0.1f;
+                    life = Math.random()*.3;
+                    position = pos;
+                    gravitypull = MovementMath.pointDir(pos,SpaceMath.getClosestPlanet(pos,planetlist).getPosition());
+                    velocity = MovementMath.addVect(MovementMath.lengthDir(gravitypull+movesign*90,(Math.random()*1.8)+0.2f),MovementMath.lengthDir(gravitypull+180,(Math.random()*80)+0.5f));
+                    movesign = (int)(Math.random()*2) == 0 ? -1 : 1;
+                    maxlife = 0.7;
+                    break;
+                }
+                case 1 : {
+                    sprite = new AnimationSet("flame.png",5,1,0.1f);
+                    life = Math.random()*.5+.75;
+                    position = pos;
+                    movesign = (int)(Math.random()*2) == 0 ? -1 : 1;
+                    velocity = MovementMath.lengthDir(rotation+(90*movesign),(int)(Math.random()*30)+10);
+                    maxlife = 2;
                     break;
                 }
             }
         }
         public boolean checkPos() {
-            life += Gdx.graphics.getDeltaTime();
-            if(maxlife<=life) {
-                return false;
-            } else {
-                position = MovementMath.addVect(new Vector3(velocity.x*Gdx.graphics.getDeltaTime(),velocity.y*Gdx.graphics.getDeltaTime(),0),position);
-                Vector3 addside = MovementMath.lengthDir(gravitypull+movesign*-1*90,1);
-                Vector3 addup = MovementMath.lengthDir(gravitypull,3);
-                velocity = MovementMath.addVect(velocity,addside,addup);
+            switch (type) {
+                case 0 : {
+                    life += Gdx.graphics.getDeltaTime();
+                    if (maxlife <= life) {
+                        return false;
+                    } else {
+                        position = MovementMath.addVect(new Vector3(velocity.x * Gdx.graphics.getDeltaTime(), velocity.y * Gdx.graphics.getDeltaTime(), 0), position);
+                        Vector3 addside = MovementMath.lengthDir(gravitypull + movesign * -1 * 90, 1);
+                        Vector3 addup = MovementMath.lengthDir(gravitypull, 3);
+                        velocity = MovementMath.addVect(velocity, addside, addup);
+                    }
+                }
+                case 1 : {
+                    sprite.updateTime(life);
+
+                    if (sprite.time >= sprite.framereg*sprite.cols*sprite.rows) {
+                        return false;
+                    } else {
+                        position = MovementMath.addVect(new Vector3(velocity.x * Gdx.graphics.getDeltaTime(), velocity.y * Gdx.graphics.getDeltaTime(), 0), position);
+                    }
+                    velocity.x *=.975f;
+                    velocity.y *=.975f;
+                }
             }
             return true;
         }
