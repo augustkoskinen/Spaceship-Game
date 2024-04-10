@@ -21,6 +21,7 @@ public class SpaceshipGameManager extends Game {
 	public static boolean pause;
 	public String launcher;
 	public static Player mainplayer;
+	public static boolean rocketcrafted = false;
 	public static boolean canboardship;
 	public static boolean canunboardship;
 
@@ -53,8 +54,6 @@ public class SpaceshipGameManager extends Game {
 		batch = new SpriteBatch();
 		mainplayer = new Player(new Vector3(512,1032,0));
 		new Planet(new Vector3(512,512,0),1);
-		RocketList.add(new Rocket(mainplayer.getPosition(),180));
-
 		this.setScreen(new GameScreen(this));
 	}
 
@@ -112,7 +111,7 @@ public class SpaceshipGameManager extends Game {
 		public TextureRegion updatePlayerPos() {
 			justclicked = Gdx.input.justTouched();
 
-			if(Gdx.input.isKeyJustPressed(Input.Keys.TAB)&&!canboardship&&!canunboardship) {
+			if(Gdx.input.isKeyJustPressed(Input.Keys.TAB)&&(!canboardship&&!canunboardship|| inventory.inventoryopen)) {
 				inventory.inventoryopen = !inventory.inventoryopen;
 				pause = inventory.inventoryopen;
 			}
@@ -260,6 +259,7 @@ public class SpaceshipGameManager extends Game {
 
 	public static class Inventory {
 		private Sprite inventoryspr;
+		private Sprite rocketspr;
 		private Sprite hotbarspr;
 		private Texture hoverslot;
 		private Texture takenslot;
@@ -273,9 +273,14 @@ public class SpaceshipGameManager extends Game {
 		public boolean inventoryopen = false;
 		public Inventory() {
 			//textures
+			rocketspr = new Sprite(new Texture("rocket.png"));
+			rocketspr.setScale(1.5f,1.5f);
+			rocketspr.setPosition(736/4-6,416/4+176);
+
 			inventoryspr = new Sprite(new Texture("inventory.png"));
 			inventoryspr.setScale(2,2);
 			inventoryspr.setPosition(736/4,416/4);
+
 			hotbarspr = new Sprite(new Texture("hotbar.png"));
 			hotbarspr.setScale(2,2);
 			hotbarspr.setPosition(736/4,416/4);
@@ -303,6 +308,14 @@ public class SpaceshipGameManager extends Game {
 				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_5)) switchslot = 4;
 				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_6)) switchslot = 5;
 				inventoryspr.draw(batch);
+				rocketspr.draw(batch, checkItem(0)<16 ? 0.5f : 1);
+				batch.draw(new TextureRegion(new Texture("woodcost.png")),736/4+8,416/4+140, 0, 0, takenslot.getWidth(), takenslot.getHeight(), 4, 2, 0);
+				if(mainplayer.justclicked&&!rocketcrafted&&checkItem(0)>=16) {
+					mainplayer.justclicked = false;
+					RocketList.add(new Rocket(mainplayer.getPosition(),mainplayer.gpulldir+180));
+					rocketcrafted = true;
+					removeItem(0,16);
+				}
 				boolean catchmouse = false;
 				for (int i = 0; i < accessories.length; i++) {
 					for (int j = 0; j < accessories[i].length; j++) {
@@ -501,6 +514,54 @@ public class SpaceshipGameManager extends Game {
 				}
 			}
 			return (foundspot ? null : item);
+		}
+		public void removeItem(int type, int count) {
+			int tempcount = count;
+			for (int j = 0; j < hotbar[0].length; j++) {
+				if(tempcount>0) {
+					if (hotbar[0][j] != null && hotbar[0][j].type == type && hotbar[0][j].stackable && hotbar[0][j].amount - tempcount > 0) {
+						hotbar[0][j].amount -= tempcount;
+						tempcount = 0;
+					} else if (hotbar[0][j] != null && hotbar[0][j].type == type && hotbar[0][j].stackable && hotbar[0][j].amount - tempcount <= 0) {
+						hotbar[0][j].amount = 0;
+						tempcount -= 16;
+					} else if (hotbar[0][j] != null && hotbar[0][j].type == type && !hotbar[0][j].stackable) {
+						hotbar[0][j] = null;
+					}
+				}
+			}
+			for (int i = 0; i < storage.length; i++) {
+				for (int j = 0; j < storage[i].length; j++) {
+					if(tempcount>0) {
+						if (storage[i][j] != null && storage[i][j].type == type && storage[i][j].stackable && storage[i][j].amount - tempcount > 0) {
+							storage[i][j].amount -= tempcount;
+							tempcount = 0;
+						} else if (storage[i][j] != null && storage[i][j].type == type && storage[i][j].stackable && storage[i][j].amount - tempcount <= 0) {
+							storage[i][j].amount = 0;
+							tempcount -= 16;
+						} else if (storage[i][j] != null && storage[i][j].type == type && !storage[i][j].stackable) {
+							storage[i][j] = null;
+						}
+					}
+				}
+			}
+		}
+
+		public int checkItem(int type) {
+			int count = 0;
+			for (int j = 0; j < hotbar[0].length; j++) {
+				if(hotbar[0][j]!=null&&type==hotbar[0][j].type) {
+					count+=hotbar[0][j].amount;
+				}
+			}
+			for (int i = 0; i < storage.length; i++) {
+				for (int j = 0; j < storage[i].length; j++) {
+					if(storage[i][j]!=null&&type==storage[i][j].type) {
+						count+=storage[i][j].amount;
+					}
+				}
+			}
+			return (count);
 		}
 	}
 	public static class Item {

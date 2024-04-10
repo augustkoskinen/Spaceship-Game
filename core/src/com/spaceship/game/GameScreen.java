@@ -88,16 +88,16 @@ public class GameScreen implements Screen {
 
             FrameworkMO.TextureSet textset = new FrameworkMO.TextureSet(planet.updatePos(),planet.sprite.x,planet.sprite.y,planet.sprite.depth);
             batch.draw(
-                    textset.texture,
-                    (float)(textset.x-planet.radius),
-                    (float)(textset.y-planet.radius),
-                    planet.sprite.texture.getWidth()/2,
-                    planet.sprite.texture.getHeight()/2,
-                    planet.sprite.texture.getWidth(),
-                    planet.sprite.texture.getHeight(),
-                    1,
-                    1,
-                    0
+                textset.texture,
+                (float)(textset.x-planet.radius),
+                (float)(textset.y-planet.radius),
+                planet.sprite.texture.getWidth()/2,
+                planet.sprite.texture.getHeight()/2,
+                planet.sprite.texture.getWidth(),
+                planet.sprite.texture.getHeight(),
+                1,
+                1,
+                0
             );
         }
 
@@ -157,16 +157,16 @@ public class GameScreen implements Screen {
                 if(textlist!=null) {
                     for (FrameworkMO.TextureSet textset : textlist) {
                         batch.draw(
-                                textset.texture,
-                                (float) (textset.x),
-                                (float) (textset.y),
-                                textset.texture.getRegionWidth() / 2,
-                                textset.texture.getRegionHeight() / 2,
-                                textset.texture.getRegionWidth(),
-                                textset.texture.getRegionHeight(),
-                                1,
-                                1,
-                                (float) textset.rotation
+                            textset.texture,
+                            (float) (textset.x),
+                            (float) (textset.y),
+                            textset.texture.getRegionWidth() / 2,
+                            textset.texture.getRegionHeight() / 2,
+                            textset.texture.getRegionWidth(),
+                            textset.texture.getRegionHeight(),
+                            1,
+                            1,
+                            (float) textset.rotation
                         );
                     }
                 }
@@ -180,11 +180,11 @@ public class GameScreen implements Screen {
 
         if(manager.canboardship) {
             manager.batch.begin();
-            manager.batch.draw(tabtoboard,Gdx.graphics.getWidth()/2-64,Gdx.graphics.getHeight()/2-16-64);
+            manager.batch.draw(tabtoboard,736/2-64,416/2-16-64);
             manager.batch.end();
         } else if(manager.canunboardship) {
             manager.batch.begin();
-            manager.batch.draw(tabtoleave,Gdx.graphics.getWidth()/2-64,Gdx.graphics.getHeight()/2-16-64);
+            manager.batch.draw(tabtoleave,736/2-64,416/2-16-64);
             manager.batch.end();
         }
 
