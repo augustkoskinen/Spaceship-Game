@@ -11,6 +11,7 @@ import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.utils.Array;
 import sun.jvm.hotspot.gc.shared.Space;
 
 import java.util.ArrayList;
@@ -98,6 +99,7 @@ public class SpaceshipGameManager extends Game {
 
 		//interaction vars
 		public boolean justclicked = false;
+		public boolean justtabbed = false;
 
 		public Player(Vector3 pos) {
 			inventory = new Inventory();
@@ -110,9 +112,11 @@ public class SpaceshipGameManager extends Game {
 
 		public TextureRegion updatePlayerPos() {
 			justclicked = Gdx.input.justTouched();
+			justtabbed = Gdx.input.isKeyJustPressed(Input.Keys.TAB);
 
-			if(Gdx.input.isKeyJustPressed(Input.Keys.TAB)&&(!canboardship&&!canunboardship|| inventory.inventoryopen)) {
+			if(mainplayer.justtabbed&&(!canboardship&&!canunboardship|| inventory.inventoryopen)) {
 				inventory.inventoryopen = !inventory.inventoryopen;
+				mainplayer.justtabbed = false;
 				pause = inventory.inventoryopen;
 			}
 
@@ -267,11 +271,36 @@ public class SpaceshipGameManager extends Game {
 		public Item[][] storage = new Item[3][6];
 		public Item[][] accessories = new Item[3][2];
 		public Item[][] hotbar = new Item[1][6];
+		public ArrayList<Item> CraftList = new ArrayList<>();
 		public int hotbarslot = 0;
 		public Item dragItem = null;
 		public Item hoverItem = null;
 		public boolean inventoryopen = false;
+
+		//crafting vars
+		public int selected = 0;
+		public double menuRot = 0;
+		public final double FADE=1; //range 1.9 to 0.1
+		public final double SCALE=1; //lower for bigger in front and smaller in back
+		public final double CHANGE_SPEED = 5; //lower for faster
+		public final double menu_x = 436;
+		public final double menu_y = 360;
+		public final double MENU_WIDTH = 256;
+		public final double MENU_HEIGHT = 32;
 		public Inventory() {
+			CraftList.add(new Item(1));
+			CraftList.add(new Item(1));
+			CraftList.add(new Item(1));
+			CraftList.add(new Item(1));
+			CraftList.add(new Item(1));
+			CraftList.add(new Item(1));
+			CraftList.add(new Item(1));
+			CraftList.add(new Item(1));
+			CraftList.add(new Item(1));
+			CraftList.add(new Item(1));
+			CraftList.add(new Item(1));
+			CraftList.add(new Item(1));
+
 			//textures
 			rocketspr = new Sprite(new Texture("rocket.png"));
 			rocketspr.setScale(1.5f,1.5f);
@@ -308,14 +337,7 @@ public class SpaceshipGameManager extends Game {
 				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_5)) switchslot = 4;
 				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_6)) switchslot = 5;
 				inventoryspr.draw(batch);
-				rocketspr.draw(batch, checkItem(0)<16 ? 0.5f : 1);
-				batch.draw(new TextureRegion(new Texture("woodcost.png")),736/4+8,416/4+140, 0, 0, takenslot.getWidth(), takenslot.getHeight(), 4, 2, 0);
-				if(mainplayer.justclicked&&!rocketcrafted&&checkItem(0)>=16) {
-					mainplayer.justclicked = false;
-					RocketList.add(new Rocket(mainplayer.getPosition(),mainplayer.gpulldir+180));
-					rocketcrafted = true;
-					removeItem(0,16);
-				}
+
 				boolean catchmouse = false;
 				for (int i = 0; i < accessories.length; i++) {
 					for (int j = 0; j < accessories[i].length; j++) {
@@ -450,6 +472,60 @@ public class SpaceshipGameManager extends Game {
 						batch.draw(count.getAnim(),j * 52 + 298, 54, 0, 0, count.getAnim().getRegionWidth(), count.getAnim().getRegionHeight(), 2, 2, 0);
 					}
 				}
+
+				if(Gdx.input.isKeyJustPressed(Input.Keys.A)) selected--;
+				if(Gdx.input.isKeyJustPressed(Input.Keys.D)) selected++;
+				if(selected>=CraftList.size()) {
+					selected = 0;
+				}
+				if(selected<0) {
+					selected = CraftList.size()-1;
+				}
+
+				//rotate
+				menuRot -= MovementMath.angleDiff(menuRot, selected*(360f/CraftList.size()))/CHANGE_SPEED;
+
+				ArrayList<Sprite> SlotSprites = new ArrayList<>();
+				ArrayList<Sprite> ItemSprites = new ArrayList<>();
+
+				for(int i = 0; i < CraftList.size(); i++) {
+					float sc = (float)Math.abs((1+MovementMath.lengthDir((menuRot+90)+i*(360f/ CraftList.size()),MENU_HEIGHT/SCALE).y/(MENU_HEIGHT*SCALE)))*2;
+					float x = (float)(menu_x+MovementMath.lengthDir((menuRot+90)+i*(360f/ CraftList.size()), MENU_WIDTH/2).x);  //x //+(32-(spr.getScaleY()*32)/2)
+					float y = (float)(menu_y-MovementMath.lengthDir((menuRot+90)+i*(360f/ CraftList.size()),MENU_HEIGHT/2).y);  //x //+(32-(spr.getScaleY()*32)/2)
+					float a = (float)(1+(MovementMath.lengthDir((menuRot+90)+i*(360f/ CraftList.size()),MENU_HEIGHT/FADE).y/(MENU_HEIGHT*FADE)))/(2*(float)FADE);
+					boolean hover = false;
+					boolean craftable = canCraft(CraftList.get(i).type,false);
+
+					CraftList.get(i).sortPriority = (float)Math.abs((1+MovementMath.lengthDir((menuRot+90)+i*(360f/ CraftList.size()),MENU_HEIGHT/SCALE).y/(MENU_HEIGHT*SCALE)))*2;
+
+					if((selected != 0 ? CraftList.size()-selected : 0)==i&&
+						Gdx.input.getX()>x-24&&
+						Gdx.graphics.getHeight()-Gdx.input.getY()>y-24&&
+						Gdx.input.getX()<x+sc*16-24&&
+						Gdx.graphics.getHeight()-Gdx.input.getY()<y+sc*16-24
+					) {
+						hover = true;
+						if(mainplayer.justclicked&&canCraft(CraftList.get(i).type,true)) {
+							mainplayer.justclicked = false;
+						}
+					}
+
+					Sprite sprslot = new Sprite(new Texture(hover ? "crafthover.png" : (craftable ? "craftslot.png" : "crafttaken.png")));
+					sprslot.setScale(sc);
+					sprslot.setPosition(x, y);
+					sprslot.setAlpha(a);
+
+					Sprite spritem = new Sprite(new Texture("item/"+CraftList.get(i).type+".png"));
+					spritem.setScale(sc/2);
+					spritem.setPosition(x-8, y-8);
+					spritem.setAlpha(a);
+
+					SlotSprites.add(sprslot);
+					ItemSprites.add(spritem);
+				}
+
+				FrameworkMO.DrawMenuWithLayering(batch, SlotSprites, ItemSprites);
+
 				if(dragItem!=null) {
 					batch.draw(dragItem.text,Gdx.input.getX()-16,Gdx.graphics.getHeight() - Gdx.input.getY()-16);
 					if(dragItem.stackable) {
@@ -563,6 +639,38 @@ public class SpaceshipGameManager extends Game {
 			}
 			return (count);
 		}
+
+		public boolean canCraft(int type, boolean craft) {
+			switch (type) {
+				case 1 : {
+					if (!rocketcrafted&&checkItem(0)>=16) {
+						if(craft) {
+							RocketList.add(new Rocket(mainplayer.getPosition(), mainplayer.gpulldir + 180));
+							rocketcrafted = true;
+							removeItem(0, 16);
+						}
+						return true;
+					}
+					break;
+				}
+			}
+			return false;
+		}
+
+		public ArrayList<Item> sortPriority(ArrayList<Item> list) {
+			ArrayList<Item> retlist = new ArrayList<Item>();
+			for(int i = 0; i< list.size();i++) {
+				double temppr = list.get(i).sortPriority;
+				int ind = retlist.size();
+				while (ind > 0 && temppr < retlist.get(ind - 1).sortPriority) {
+					ind--;
+				}
+				ind = Math.max(0,ind);
+				retlist.add(ind,list.get(i));
+			}
+			System.out.println(retlist);
+			return retlist;
+		}
 	}
 	public static class Item {
 		public boolean ininventory = true;
@@ -575,11 +683,17 @@ public class SpaceshipGameManager extends Game {
 		public Texture text;
 		public boolean stackable;
 		public int amount = 1;
+
+		public double sortPriority = 0;
 		public Item(int t) {
 			type = t;
 			switch (type) {
 				case 0 : {
 					stackable = true;
+					break;
+				}
+				case 1 : {
+					stackable = false;
 					break;
 				}
 			}
@@ -793,15 +907,18 @@ public class SpaceshipGameManager extends Game {
 
 				if(loaded){
 					canunboardship = true;
-					if(Gdx.input.isKeyJustPressed(Input.Keys.TAB)&&!mainplayer.inventory.inventoryopen) {
+					if(mainplayer.justtabbed&&!mainplayer.inventory.inventoryopen) {
 						unload();
+						mainplayer.justtabbed = false;
 					}
 				}
 			} else {
 				if(MovementMath.overlaps(mainplayer.sprite.collision, sprite.collision, rot)&&!loaded) {
 					canboardship = true;
-					if(Gdx.input.isKeyJustPressed(Input.Keys.TAB)&&!mainplayer.inventory.inventoryopen)
+					if(mainplayer.justtabbed&&!mainplayer.inventory.inventoryopen) {
 						load(mainplayer);
+						mainplayer.justtabbed = false;
+					}
 				}
 				rot = (rot+gpointdir)/2;
 				Vector3 escapepos = MovementMath.lengthDir(gpointdir+180,1);

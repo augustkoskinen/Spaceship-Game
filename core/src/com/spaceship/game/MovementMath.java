@@ -145,6 +145,10 @@ public class MovementMath extends ApplicationAdapter {
         return overlaps(rect, newcirc);
     }
 
+    public static double angleDiff(double a1, double a2) {
+        return ((((a1 - a2) % 360) +540) % 360)- 180;
+    }
+
 
     static public boolean overlaps(Rectangle rect, Circle circ){
         double circDisX = Math.abs((circ.x) - (rect.x));

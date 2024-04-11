@@ -1,6 +1,7 @@
 package com.spaceship.game;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.Rectangle;
@@ -8,6 +9,7 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.utils.Array;
 
 import java.util.ArrayList;
 
@@ -388,6 +390,32 @@ public class FrameworkMO {
             x = xpos;
             y = ypos;
             rotation = 0;
+        }
+    }
+
+    public static void DrawMenuWithLayering(SpriteBatch spritebatch, ArrayList<Sprite> slotlist, ArrayList<Sprite> itemlist){
+        ArrayList<Sprite> textlist = new ArrayList<>();
+        for(int i = 0; i < slotlist.size();i++) {
+            float tempy = slotlist.get(i).getY();
+            int ind = textlist.size();
+            while (ind > 0 && tempy > textlist.get(ind - 1).getY()) {
+                ind--;
+            }
+            ind = Math.max(0,ind);
+            textlist.add(ind,slotlist.get(i));
+        }
+        for(int i = 0; i < itemlist.size();i++) {
+            float tempy = itemlist.get(i).getY();
+            int ind = textlist.size();
+            while (ind > 0 && tempy+8 > textlist.get(ind - 1).getY()) {
+                ind--;
+            }
+            ind = Math.max(0,ind);
+            textlist.add(ind,itemlist.get(i));
+        }
+
+        for(int i = 0; i < textlist.size(); i++){
+            textlist.get(i).draw(spritebatch);
         }
     }
 }
