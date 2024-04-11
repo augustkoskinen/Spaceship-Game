@@ -36,25 +36,25 @@ public class SpaceshipGameManager extends Game {
 	static ArrayList<PoofCloud> PoofCloudList = new ArrayList<>();
 	static ArrayList<Planet> PlanetList = new ArrayList<>();
 	static ArrayList<Rocket> RocketList = new ArrayList<>();
-	static ArrayList<FrameworkMO.SpriteObjectSqr> SprObjSqrList = new ArrayList<>();
-	static ArrayList<FrameworkMO.SpriteObjectCirc> SprObjCircList = new ArrayList<>();
 	static ArrayList<FrameworkMO.ParticleSet> ParticleList = new ArrayList<>();
 	static ArrayList<Item> ItemList = new ArrayList<>();
 	static ArrayList CollisionList = new ArrayList<>();
-
-	//shake vars
-	public static boolean shake = false;
-	public static double shaketime = 0.7f;
-	public static Vector3 loadjiggle = new Vector3();
-
+	//static ArrayList<FrameworkMO.SpriteObjectSqr> SprObjSqrList = new ArrayList<>();
+	//static ArrayList<FrameworkMO.SpriteObjectCirc> SprObjCircList = new ArrayList<>();
 
 	public SpaceshipGameManager(String launcher){ this.launcher = launcher; }
 
 	@Override
 	public void create () {
 		batch = new SpriteBatch();
+
+		//set up player
 		mainplayer = new Player(new Vector3(512,1032,0));
+
+		//add a planet
 		new Planet(new Vector3(512,512,0),1);
+
+		//set game screen
 		this.setScreen(new GameScreen(this));
 	}
 
@@ -67,12 +67,11 @@ public class SpaceshipGameManager extends Game {
 	}
 
 
-
-
 	//===========>
 	//OBJECTS
 	//===========>
 
+	//object for a player
 	public static class Player {
 		//basic vars
 		public FrameworkMO.SpriteObjectCirc sprite;
@@ -102,8 +101,10 @@ public class SpaceshipGameManager extends Game {
 		public boolean justtabbed = false;
 
 		public Player(Vector3 pos) {
+			//add an inventory
 			inventory = new Inventory();
 
+			//create body
 			sprite = new FrameworkMO.SpriteObjectCirc("p1body.png", pos.x, pos.y, 8, CollisionList);
 
 			x = pos.x;
@@ -111,9 +112,11 @@ public class SpaceshipGameManager extends Game {
 		}
 
 		public TextureRegion updatePlayerPos() {
+			//update input vars
 			justclicked = Gdx.input.justTouched();
 			justtabbed = Gdx.input.isKeyJustPressed(Input.Keys.TAB);
 
+			//update inventory
 			if(mainplayer.justtabbed&&(!canboardship&&!canunboardship|| inventory.inventoryopen)) {
 				inventory.inventoryopen = !inventory.inventoryopen;
 				mainplayer.justtabbed = false;
@@ -129,24 +132,23 @@ public class SpaceshipGameManager extends Game {
 			playertext = new TextureRegion(new Texture("p" + skintype + "body.png"));
 
 			if (!pause&&loadedrocket==null) {
+				//update gravity vars
 				gpulldir = MovementMath.pointDir(sprite.getPosition(),SpaceMath.getClosestPlanet(sprite.getPosition(),PlanetList).getPosition());
-
 				double multamount = Gdx.graphics.getDeltaTime() * SLOWSPEED;
 				Vector3 gpulltemp = SpaceMath.getNetGravity(sprite.getPosition(), PlanetList,1);
 				gpullvect = MovementMath.addVect(gpullvect, new Vector3((float)(gpulltemp.x * multamount),(float)(gpulltemp.y * multamount),0));
 
+				//update walk velocity
 				if (netmove != 0) {
 					double movespeed = netmove * WALK_SPEED;
 					walkvect = new Vector3(walkvect.x+(MovementMath.lengthDir(gpulldir+90,movespeed).x),walkvect.y+(MovementMath.lengthDir(gpulldir+90,movespeed).y),0);
 					movedir = netmove;
 				}
 
+				//check if player is grounded/allowed to jump
 				boolean grounded = MovementMath.CheckCollisions(playercol, CollisionList, MovementMath.lengthDir(gpulldir,1), 7.5f)!=-1;
-
 				if (grounded) {jumpcount = 1; gpullvect = new Vector3();}
-
 				if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && jumpcount > 0) {
-
 					PoofCloudList.add(new PoofCloud(gpulldir+90, new Vector3((float) (sprite.x-8), (float) (sprite.y-8), 0)));
 
 					jumpcount--;
@@ -165,23 +167,10 @@ public class SpaceshipGameManager extends Game {
 
 				if (MovementMath.toDegrees() != -1) lastdir = MovementMath.toDegrees();
 
-				/*
-				float curupdir = 45;
-				if (-1 == MovementMath.CheckCollisions(playercol, CollisionList, new Vector3((float) (netvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED), (float) (Math.sin(Math.toRadians(curupdir)) * netvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0), 7.5f)) {
-					while (-1 == MovementMath.CheckCollisions(playercol, CollisionList, new Vector3((float) (netvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED), (float) (Math.sin(Math.toRadians(curupdir))* netvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0), 7.5f)) {
-						curupdir--;
-						if(Math.sin(curupdir)<=0) break;
-					}
-					curupdir++;
-					if(curupdir>0) {
-						//MovementMath.addVect(netvect, MovementMath.lengthDir(curupdir, netvect.x));
-						//sprite.addPosition(0,MovementMath.lengthDir(Math.toRadians(curupdir), netvect.x).y * Gdx.graphics.getDeltaTime() * SLOWSPEED);
-					}
-				} else {
-				*/
-
+				//add vectors for movement
 				netvect = MovementMath.addVect(walkvect,jumpvect,gpullvect);
 
+				//move x
 				playercol = MovementMath.DuplicateCirc(sprite.collision);
 				if (-1 != MovementMath.CheckCollisions(playercol, CollisionList, new Vector3((float) (netvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0, 0), 7.5f)) {
 					double sign = Math.abs(netvect.x) / (netvect.x);
@@ -194,9 +183,9 @@ public class SpaceshipGameManager extends Game {
 					jumpvect.x = 0;
 					gpullvect.x = 0;
 				}
-
 				sprite.addPosition(new Vector3((float) (netvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0, 0));
 
+				//move y
 				playercol = MovementMath.DuplicateCirc(sprite.collision);
 				if (-1 != MovementMath.CheckCollisions(playercol, CollisionList, new Vector3(0, (float) (netvect.y * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0), 7.5f)) {
 					double sign = Math.abs(netvect.y) / (netvect.y);
@@ -211,8 +200,10 @@ public class SpaceshipGameManager extends Game {
 				}
 				sprite.addPosition(new Vector3(0, (float) (netvect.y * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0));
 
+				//rotation for movement
 				moverot -= (walkvect.len()*movedir * Gdx.graphics.getDeltaTime() * SLOWSPEED) * 5;
 
+				//natural decay
 				walkvect.x *= .5f;
 				walkvect.y *= .5f;
 				jumpvect.x *= .92f;
@@ -222,6 +213,7 @@ public class SpaceshipGameManager extends Game {
 			x = sprite.getPosition().x;
 			y = sprite.getPosition().y;
 
+			//update jump
 			sprite.depth = y;
 			if (jumpdir != 0) {
 				jumpdir += jumpdiradd;
@@ -229,8 +221,10 @@ public class SpaceshipGameManager extends Game {
 					jumpdiradd = 0;
 				}
 			}
+
 			if(loadedrocket!=null)
 				return null;
+
 			return playertext;
 		}
 
@@ -250,6 +244,7 @@ public class SpaceshipGameManager extends Game {
 			return new Vector3((float) x, (float) y, 0);
 		}
 
+		//get the texture for the player's eyes
 		public FrameworkMO.TextureSet getEyeText() {
 			Vector3 addpos = MovementMath.lengthDir(gpulldir+(movedir==-1?-90:90), 1.8f);
 
@@ -260,14 +255,19 @@ public class SpaceshipGameManager extends Game {
 		}
 	}
 
-
+	//class for the inventory for a player
 	public static class Inventory {
+		//texture and sprites needed
 		private Sprite inventoryspr;
 		private Sprite rocketspr;
 		private Sprite hotbarspr;
 		private Texture hoverslot;
 		private Texture takenslot;
+
+		//number of resources for items
 		private FrameworkMO.AnimationSet count;
+
+		//arrays
 		public Item[][] storage = new Item[3][6];
 		public Item[][] accessories = new Item[3][2];
 		public Item[][] hotbar = new Item[1][6];
@@ -329,6 +329,7 @@ public class SpaceshipGameManager extends Game {
 		public void drawInventory(SpriteBatch batch) {
 			batch.begin();
 			if(inventoryopen) {
+				//hotkeys
 				int switchslot = -1;
 				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) switchslot = 0;
 				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_2)) switchslot = 1;
@@ -338,6 +339,7 @@ public class SpaceshipGameManager extends Game {
 				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_6)) switchslot = 5;
 				inventoryspr.draw(batch);
 
+				//draw/manage accessory inventory
 				boolean catchmouse = false;
 				for (int i = 0; i < accessories.length; i++) {
 					for (int j = 0; j < accessories[i].length; j++) {
@@ -384,6 +386,8 @@ public class SpaceshipGameManager extends Game {
 						}
 					}
 				}
+
+				//draw/manage storage inventory
 				for (int i = 0; i < storage.length; i++) {
 					for (int j = 0; j < storage[i].length; j++) {
 						if(storage[i][j]!=null) {
@@ -429,6 +433,8 @@ public class SpaceshipGameManager extends Game {
 						}
 					}
 				}
+
+				//draw/manage hotbar inventory
 				for (int j = 0; j < hotbar[0].length; j++) {
 					if(hotbar[0][j]!=null) {
 						batch.draw(new TextureRegion(takenslot),j * 52 + 298, 54, 0, 0, takenslot.getWidth(), takenslot.getHeight(), 2, 2, 0);
@@ -473,6 +479,7 @@ public class SpaceshipGameManager extends Game {
 					}
 				}
 
+				//crafting menu management
 				if(Gdx.input.isKeyJustPressed(Input.Keys.A)) selected--;
 				if(Gdx.input.isKeyJustPressed(Input.Keys.D)) selected++;
 				if(selected>=CraftList.size()) {
@@ -488,6 +495,7 @@ public class SpaceshipGameManager extends Game {
 				ArrayList<Sprite> SlotSprites = new ArrayList<>();
 				ArrayList<Sprite> ItemSprites = new ArrayList<>();
 
+				//add crafting items for drawing gui
 				for(int i = 0; i < CraftList.size(); i++) {
 					float sc = (float)Math.abs((1+MovementMath.lengthDir((menuRot+90)+i*(360f/ CraftList.size()),MENU_HEIGHT/SCALE).y/(MENU_HEIGHT*SCALE)))*2;
 					float x = (float)(menu_x+MovementMath.lengthDir((menuRot+90)+i*(360f/ CraftList.size()), MENU_WIDTH/2).x);  //x //+(32-(spr.getScaleY()*32)/2)
@@ -524,6 +532,7 @@ public class SpaceshipGameManager extends Game {
 					ItemSprites.add(spritem);
 				}
 
+				//draw crafting gui
 				FrameworkMO.DrawMenuWithLayering(batch, SlotSprites, ItemSprites);
 
 				if(dragItem!=null) {
@@ -539,6 +548,7 @@ public class SpaceshipGameManager extends Game {
 					}
 				}
 			} else {
+				//hotkeys
 				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) hotbarslot = 0;
 				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_2)) hotbarslot = 1;
 				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_3)) hotbarslot = 2;
@@ -546,6 +556,8 @@ public class SpaceshipGameManager extends Game {
 				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_5)) hotbarslot = 4;
 				if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_6)) hotbarslot = 5;
 				hotbarspr.draw(batch);
+
+				//draw hotbar when not in inventory
 				for (int j = 0; j < hotbar[0].length; j++) {
 					if(j==hotbarslot)
 						batch.draw(new TextureRegion(hoverslot),j * 52 + 222, 52, 0, 0, hoverslot.getWidth(),hoverslot.getHeight(), 2, 2, 0);
@@ -561,6 +573,7 @@ public class SpaceshipGameManager extends Game {
 			batch.end();
 		}
 
+		//add item to inventory
 		public Item addItem(Item item) {
 			boolean foundspot = false;
 			for (int j = 0; j < hotbar[0].length; j++) {
@@ -591,6 +604,8 @@ public class SpaceshipGameManager extends Game {
 			}
 			return (foundspot ? null : item);
 		}
+
+		//remove item from inventory
 		public void removeItem(int type, int count) {
 			int tempcount = count;
 			for (int j = 0; j < hotbar[0].length; j++) {
@@ -623,6 +638,7 @@ public class SpaceshipGameManager extends Game {
 			}
 		}
 
+		//check if an item is in the inventory
 		public int checkItem(int type) {
 			int count = 0;
 			for (int j = 0; j < hotbar[0].length; j++) {
@@ -640,6 +656,7 @@ public class SpaceshipGameManager extends Game {
 			return (count);
 		}
 
+		//check if an item can be crafted
 		public boolean canCraft(int type, boolean craft) {
 			switch (type) {
 				case 1 : {
@@ -656,22 +673,9 @@ public class SpaceshipGameManager extends Game {
 			}
 			return false;
 		}
-
-		public ArrayList<Item> sortPriority(ArrayList<Item> list) {
-			ArrayList<Item> retlist = new ArrayList<Item>();
-			for(int i = 0; i< list.size();i++) {
-				double temppr = list.get(i).sortPriority;
-				int ind = retlist.size();
-				while (ind > 0 && temppr < retlist.get(ind - 1).sortPriority) {
-					ind--;
-				}
-				ind = Math.max(0,ind);
-				retlist.add(ind,list.get(i));
-			}
-			System.out.println(retlist);
-			return retlist;
-		}
 	}
+
+	//class for items in inventory, on the ground, and in the crafting menu
 	public static class Item {
 		public boolean ininventory = true;
 		public double pickupable = 0;
@@ -702,6 +706,7 @@ public class SpaceshipGameManager extends Game {
 			text = new Texture("item/"+type+".png");
 		}
 		public FrameworkMO.TextureSet updatePosition() {
+			//check gravity vectors
 			gvect.add(SpaceMath.getNetGravity(new Vector3(collision.x,collision.y,0),PlanetList,.01f));
 			Planet nearplanet = SpaceMath.getClosestPlanet(new Vector3(collision.x,collision.y,0),PlanetList);
 			gvectdir = MovementMath.pointDir(new Vector3(collision.x,collision.y,0), nearplanet.getPosition());
@@ -710,6 +715,7 @@ public class SpaceshipGameManager extends Game {
 				pickupable-=Gdx.graphics.getDeltaTime();
 			}
 
+			//add x
 			Circle col = MovementMath.DuplicateCirc(collision);
 			if (MovementMath.overlaps(col, nearplanet.sprite.collision, new Vector3((float) (gvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0, 0))) {
 				double sign = Math.abs(gvect.x) / (gvect.x);
@@ -719,9 +725,9 @@ public class SpaceshipGameManager extends Game {
 				}
 				gvect.x = 0;
 			}
-
 			collision.x += gvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED;
 
+			//add y
 			col = MovementMath.DuplicateCirc(collision);
 			if (MovementMath.overlaps(col, nearplanet.sprite.collision, new Vector3(0, (float) (gvect.y * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0))) {
 				double sign = Math.abs(gvect.y) / (gvect.y);
@@ -735,6 +741,8 @@ public class SpaceshipGameManager extends Game {
 
 			return new FrameworkMO.TextureSet(new TextureRegion(text),collision.x,collision.y);
 		}
+
+		//drop item form inventory
 		public void drop() {
 			ItemList.add(this);
 			collision.setPosition((float)mainplayer.x,(float)mainplayer.y);
@@ -742,6 +750,7 @@ public class SpaceshipGameManager extends Game {
 			ininventory = false;
 		}
 
+		//drop item form inventory at a pos
 		public void drop(Vector3 pos) {
 			ItemList.add(this);
 			collision.setPosition((float)pos.x,(float)pos.y);
@@ -749,6 +758,7 @@ public class SpaceshipGameManager extends Game {
 			ininventory = false;
 		}
 
+		//gain item into inventory
 		public boolean gain() {
 			if(pickupable<=0) {
 				ItemList.remove(this);
@@ -760,6 +770,7 @@ public class SpaceshipGameManager extends Game {
 		}
 	}
 
+	//class for planets
 	public static class Planet {
 		static ArrayList<FrameworkMO.DestroyableObject> TreeList = new ArrayList<>();
 		public FrameworkMO.SpriteObjectCirc sprite;
@@ -810,6 +821,7 @@ public class SpaceshipGameManager extends Game {
 		}
 	}
 
+	//class for clouds formed by jumps
 	public static class PoofCloud {
 		private double life = 0.7f;
 		private int type = 0;
@@ -861,6 +873,7 @@ public class SpaceshipGameManager extends Game {
 		}
 	}
 
+	//class for a rocket
 	public static class Rocket {
 		public FrameworkMO.ParticleSet flamePS;
 		boolean loaded = false;
@@ -881,6 +894,7 @@ public class SpaceshipGameManager extends Game {
 
 		}
 		public FrameworkMO.TextureSet updateSpeed() {
+			//gravity vectors
 			Vector3 gvectdir = SpaceMath.getNetGravity(position, PlanetList, 2);
 			gpointdir = MovementMath.pointDir(position, SpaceMath.getClosestPlanet(position,PlanetList).getPosition());
 			Planet nearplanet = SpaceMath.getClosestPlanet(position, PlanetList);
@@ -889,6 +903,7 @@ public class SpaceshipGameManager extends Game {
 			canunboardship = false;
 
 			if(loaded) {
+				//check inputs for movement
 				if (Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
 					thrust += 20;
 					int repetitions = (int)(Math.random()*20);
@@ -933,6 +948,7 @@ public class SpaceshipGameManager extends Game {
 				netvect = new Vector3(velocity.x, velocity.y, 0);
 			}
 
+			//add x
 			Rectangle col = MovementMath.DuplicateRect(sprite.collision);
 			if (MovementMath.overlaps(nearplanet.sprite.collision, col, rot, new Vector3((float) (netvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0, 0))) {
 				double sign = Math.abs(netvect.x) / (netvect.x);
@@ -946,9 +962,9 @@ public class SpaceshipGameManager extends Game {
 					}
 				netvect.x = 0;
 			}
-
 			sprite.addPosition(new Vector3((float)(netvect.x * Gdx.graphics.getDeltaTime() * SLOWSPEED),0,0));
 
+			//add y
 			col = MovementMath.DuplicateRect(sprite.collision);
 			if (MovementMath.overlaps(nearplanet.sprite.collision, col, rot, new Vector3(0, (float) (netvect.y * Gdx.graphics.getDeltaTime() * SLOWSPEED), 0))) {
 				double sign = Math.abs(netvect.y) / (netvect.y);
@@ -964,6 +980,7 @@ public class SpaceshipGameManager extends Game {
 			}
 			sprite.addPosition(new Vector3(0,(float)(netvect.y * Gdx.graphics.getDeltaTime() * SLOWSPEED),0));
 
+			//decay
 			velocity.x *= .975f;
 			velocity.y *= .975f;
 
@@ -972,6 +989,8 @@ public class SpaceshipGameManager extends Game {
 
 			return new FrameworkMO.TextureSet(new TextureRegion(sprite.texture),position.x,position.y,-position.y,rot);
 		}
+
+		//load the player
 		public void load(Player player) {
 			if(!loaded) {
 				this.player = player;
@@ -982,6 +1001,7 @@ public class SpaceshipGameManager extends Game {
 			}
 		}
 
+		//unload the player
 		public void unload() {
 			if(loaded) {
 				player.loadedrocket = null;

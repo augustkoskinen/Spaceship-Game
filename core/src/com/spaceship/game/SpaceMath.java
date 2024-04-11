@@ -5,14 +5,20 @@ import com.badlogic.gdx.math.Vector3;
 import java.util.ArrayList;
 
 public class SpaceMath {
+    //gravitational constant
     private static final double GRAVITATIONAL_CONSTANT = 1e13;
+
+    //get the gravitational force between two masses at a distance
     public static double getGravityForce(double m1, double m2, double d){
         return ((GRAVITATIONAL_CONSTANT*m1*m2)/Math.pow(d,5));
     }
+
+    //get speed required to orbit an object of m mass at d distance away
     public static double getOrbitalSpeed(double m, double d){
         return Math.sqrt((GRAVITATIONAL_CONSTANT*m)/d);
     }
 
+    //get the net gravitational pull on an object by a list of planets
     public static Vector3 getNetGravity(Vector3 ppos, ArrayList<SpaceshipGameManager.Planet> plist, double objmass){
         Vector3 gvect = new Vector3();
         for (SpaceshipGameManager.Planet planet : plist){
@@ -26,6 +32,7 @@ public class SpaceMath {
         return gvect;
     }
 
+    //get the planet with the most gravitational pull on the object in argument
     public static SpaceshipGameManager.Planet getClosestPlanet(Vector3 ppos, ArrayList<SpaceshipGameManager.Planet> plist){
         double maxmag = 0;
         int pi = -1;

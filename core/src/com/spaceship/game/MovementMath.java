@@ -39,22 +39,7 @@ public class MovementMath extends ApplicationAdapter {
         return Math.sqrt(Math.pow(pointb.y-pointa.y,2)+Math.pow(pointb.x-pointa.x,2));
     }
 
-    static public int CheckCollisions(Circle colcirc, ArrayList collist, Vector3 offset){
-        for(int i = 0; i< collist.size();i++) {
-            if (collist.get(i) instanceof Circle) {
-                Circle curcirc = (Circle) collist.get(i);
-                if (!colcirc.equals(curcirc) && overlaps(DuplicateCirc(colcirc.x+offset.x,colcirc.y+offset.y,colcirc.radius), curcirc)) {
-                    return i;
-                }
-            } else if (collist.get(i) instanceof Rectangle) {
-                Rectangle currec = (Rectangle) collist.get(i);
-                if (overlaps(currec,DuplicateCirc(colcirc.x+offset.x,colcirc.y+offset.y,colcirc.radius))) {
-                    return i;
-                }
-            }
-        }
-        return -1;
-    }
+    //collision between a circle and a list of collision boxes, using an ofset and adjustable radius.
     static public int CheckCollisions(Circle colcirc, ArrayList collist, Vector3 offset, float colrad){
         for(int i = 0; i< collist.size();i++) {
             if (collist.get(i) instanceof Circle) {
@@ -71,15 +56,23 @@ public class MovementMath extends ApplicationAdapter {
         }
         return -1;
     }
+
+    //return dupe rect
     static public Rectangle DuplicateRect(Rectangle rect){
         return new Rectangle(rect.x,rect.y,rect.width,rect.height);
     }
+
+    //return dupe circ
     static public Circle DuplicateCirc(Circle circ){
         return new Circle(circ.x,circ.y,circ.radius);
     }
+
+    //return dupe circ using arguments for x, y, and rad
     static public Circle DuplicateCirc(float x, float y, float rad){
         return new Circle(x,y,rad);
     }
+
+    //convert key inputs to directional angle
     static public int toDegrees() {
         if (Gdx.input.isKeyPressed(Input.Keys.W) && Gdx.input.isKeyPressed(Input.Keys.D)) {
             return 315;
@@ -127,6 +120,7 @@ public class MovementMath extends ApplicationAdapter {
         return overlaps(rect, newcirc);
     }
 
+    //check collision between a circle and a rotated/offset rectangle
     public static boolean overlaps(Circle circ, Rectangle rect, double rectrot, Vector3 offset){
         Circle newcirc = MovementMath.DuplicateCirc(circ);
         Vector3 newpos = (MovementMath.addVect(MovementMath.lengthDir(
@@ -145,11 +139,12 @@ public class MovementMath extends ApplicationAdapter {
         return overlaps(rect, newcirc);
     }
 
+    //get difference between angles
     public static double angleDiff(double a1, double a2) {
-        return ((((a1 - a2) % 360) +540) % 360)- 180;
+        return ((((a1 - a2) % 360) + 540) % 360) - 180;
     }
 
-
+    //collision between a rectangle and a circle
     static public boolean overlaps(Rectangle rect, Circle circ){
         double circDisX = Math.abs((circ.x) - (rect.x));
         double circDisY = Math.abs((circ.y) - (rect.y));
@@ -169,24 +164,33 @@ public class MovementMath extends ApplicationAdapter {
     static public boolean overlaps(Circle circ, Circle circ2){
         return (pointDis(new Vector3(circ.x, circ.y, 0),new Vector3(circ2.x, circ2.y, 0))<=circ.radius+circ2.radius);
     }
+
+    //check overlap between two circles, where the first circle has an offset.
     static public boolean overlaps(Circle circ, Circle circ2, Vector3 circoffset){
         return (pointDis(new Vector3(circ.x+circoffset.x, circ.y+circoffset.y, 0),new Vector3(circ2.x, circ2.y, 0))<=circ.radius+circ2.radius);
     }
+
+    //check overlap between 2 rects
     static public boolean overlaps(Rectangle r1, Rectangle r2) {
         return !(r1.x + r1.width < r2.x || r1.y + r1.height < r2.y || r1.x > r2.x + r2.width || r1.y > r2.y + r2.height);
     }
 
+    //add 2 vectors
     public static Vector3 addVect(Vector3 v1, Vector3 v2){
         return new Vector3(v1.x+v2.x,v1.y+v2.y,v1.z+v2.z);
     }
+
+    //add 3 vectors
     public static Vector3 addVect(Vector3 v1, Vector3 v2, Vector3 v3){
         return new Vector3(v1.x+v2.x+v3.x,v1.y+v2.y+v3.y,v1.z+v2.z+v3.z);
     }
 
+    //get the angle of a camera
     public static float getCameraAngle(OrthographicCamera cam) {
         return (float)-Math.toDegrees(Math.atan2(cam.up.x, cam.up.y)) + 180;
     }
 
+    //set the angle of a camera
     public static void setCamPos(OrthographicCamera cam, double pos){
         cam.rotate((MovementMath.getCameraAngle(cam) - (float)pos)+90);
     }

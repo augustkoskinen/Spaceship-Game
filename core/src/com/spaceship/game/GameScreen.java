@@ -18,14 +18,22 @@ import static com.spaceship.game.MovementMath.lengthDir;
 
 public class GameScreen implements Screen {
     //320, 160 spawn
+
+    //cam stuff
     private OrthographicCamera cam;
     public double camrot = 0;
     public double prevrot = 0;
+
+    //general vars
     private SpaceshipGameManager manager;
     private SpriteBatch batch;
+    private SpaceshipGameManager.Player player;
+
+    //textures
     private Texture tabtoboard;
     private Texture tabtoleave;
-    private SpaceshipGameManager.Player player;
+
+    //constructor
     public GameScreen (SpaceshipGameManager manager) {
         this.manager = manager;
         player = manager.mainplayer;
@@ -35,6 +43,7 @@ public class GameScreen implements Screen {
     public void show() {
         batch = new SpriteBatch();
 
+        //assigning textures
         tabtoboard = new Texture("boardaction.png");
         tabtoleave = new Texture("leaveaction.png");
 
@@ -50,12 +59,12 @@ public class GameScreen implements Screen {
         //clears screen
         ScreenUtils.clear(0, 0, 0, 1, true);
 
+        //cam updates
         double camdis = MovementMath.pointDis(cam.position, player.loadedrocket!=null ? player.loadedrocket.sprite.getPosition() : player.getPosition());
         double camdir = MovementMath.pointDir(cam.position, player.loadedrocket!=null ? player.loadedrocket.sprite.getPosition() : player.getPosition());
-
         Vector3 campos = lengthDir(camdir, camdis);
         cam.position.set(cam.position.x + campos.x * .05f, cam.position.y + campos.y * .05f, 0);
-        cam.zoom = 1.5f;//player.loadedrocket!=null ? 3 : 0.75f;
+        cam.zoom = 1.5f;
 
         if(prevrot<-90&&player.gpulldir>90){
             camrot = (camrot+360+player.gpulldir)*0.5;
@@ -67,13 +76,15 @@ public class GameScreen implements Screen {
         prevrot = player.gpulldir;
 
         MovementMath.setCamPos(cam, camrot);
-
         cam.update();
         batch.setProjectionMatrix(cam.combined);
 
+        //begin drawing
         batch.begin();
 
+        //draw planets
         for(SpaceshipGameManager.Planet planet : manager.PlanetList) {
+            //draw trees
             for(int i = 0; i<planet.TreeList.size();i++) {
                 Texture text = planet.TreeList.get(i).texture;
                 boolean alive = planet.TreeList.get(i).checkDestroyable(player,manager);
@@ -86,6 +97,7 @@ public class GameScreen implements Screen {
                 }
             }
 
+            //draw planet
             FrameworkMO.TextureSet textset = new FrameworkMO.TextureSet(planet.updatePos(),planet.sprite.x,planet.sprite.y,planet.sprite.depth);
             batch.draw(
                 textset.texture,
@@ -101,12 +113,14 @@ public class GameScreen implements Screen {
             );
         }
 
+        //draw particles
         for(int i = 0; i<manager.ParticleList.size();i++) {
             ArrayList<FrameworkMO.TextureSet> textlist = manager.ParticleList.get(i).getParticles();
             if(textlist==null) {
                 manager.ParticleList.remove(i);
                 i--;
             } else {
+                //draw individual particle
                 for(FrameworkMO.TextureSet textset : textlist) {
                     batch.draw(
                         textset.texture,
@@ -124,6 +138,7 @@ public class GameScreen implements Screen {
             }
         }
 
+        //draw player
         TextureRegion playertext = player.updatePlayerPos();
         if(playertext!=null) {
             batch.draw(playertext, (float) (player.sprite.x - player.sprite.collision.radius), (float) (player.sprite.y - player.sprite.collision.radius), playertext.getRegionWidth() / 2, playertext.getRegionHeight() / 2, playertext.getRegionWidth(), playertext.getRegionHeight(), 1, 1, (float) player.moverot);
@@ -131,6 +146,7 @@ public class GameScreen implements Screen {
             batch.draw(eyetext.texture, (float) (eyetext.x - eyetext.texture.getRegionWidth() / 2), (float) (eyetext.y - eyetext.texture.getRegionWidth() / 2), eyetext.texture.getRegionWidth() / 2, eyetext.texture.getRegionHeight() / 2, eyetext.texture.getRegionWidth(), eyetext.texture.getRegionHeight(), 1, 1, (float) eyetext.rotation);
         }
 
+        //draw items on the ground
         for(int i = 0; i<manager.ItemList.size();i++) {
             FrameworkMO.TextureSet textset =  manager.ItemList.get(i).updatePosition();
             boolean pickedup = false;
@@ -142,6 +158,7 @@ public class GameScreen implements Screen {
             }
         }
 
+        //draw poof cloud for the player's jumps
         for(int i = 0; i<manager.PoofCloudList.size();i++) {
             FrameworkMO.TextureSet text = manager.PoofCloudList.get(i).updateTime();
             if(text!=null) {
@@ -150,6 +167,7 @@ public class GameScreen implements Screen {
                 i--;
         }
 
+        //draw rocket sprite
         for(int i = 0; i<manager.RocketList.size();i++) {
             FrameworkMO.TextureSet text = manager.RocketList.get(i).updateSpeed();
             if(text!=null) {
@@ -178,6 +196,7 @@ public class GameScreen implements Screen {
 
         batch.end();
 
+        //draw gui for pressing the tab to board a ship.
         if(manager.canboardship) {
             manager.batch.begin();
             manager.batch.draw(tabtoboard,736/2-64,416/2-16-64);
@@ -188,6 +207,7 @@ public class GameScreen implements Screen {
             manager.batch.end();
         }
 
+        //draw inventory gui
         player.inventory.drawInventory(manager.batch);
     }
 

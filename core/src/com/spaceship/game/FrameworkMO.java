@@ -13,6 +13,11 @@ import com.badlogic.gdx.utils.Array;
 
 import java.util.ArrayList;
 
+/*
+This class is a collection of necessary methods for general designs.
+*/
+
+
 public class FrameworkMO {
     //class for sprites w/ a hitbox
     public static class SpriteObjectSqr {
@@ -69,7 +74,7 @@ public class FrameworkMO {
         }
     }
 
-    //class for sprites w/ a hitbox
+    //class for sprites w/ a hitbox and that can be destroyed
     public static class DestroyableObject extends SpriteObjectSqr {
         public int health = 0;
         public DestroyableObject(String texturepath, double xpos, double ypos, double colwidth, double colheight, double coladdx, double coladdy, double rot, ArrayList collist) {
@@ -89,6 +94,7 @@ public class FrameworkMO {
         }
     }
 
+    //class for objects with a circular hitbox
     public static class SpriteObjectCirc {
         Texture texture;
         Circle collision = new Circle();
@@ -133,6 +139,7 @@ public class FrameworkMO {
         }
     }
 
+    //class for a particle manager
     public static class ParticleSet {
         ArrayList<Particle> ParticleList = new ArrayList<>();
         public ParticleSet(int type, Vector3 pos, ArrayList<SpaceshipGameManager.Planet> planetlist) {
@@ -184,6 +191,8 @@ public class FrameworkMO {
             }
         }
     }
+
+    //class for individual particles
     public static class Particle {
         public AnimationSet sprite = null;
         double maxlife = 0;
@@ -393,6 +402,7 @@ public class FrameworkMO {
         }
     }
 
+    //draw an arraylist of sprites with layering, given their y positions
     public static void DrawMenuWithLayering(SpriteBatch spritebatch, ArrayList<Sprite> slotlist, ArrayList<Sprite> itemlist){
         ArrayList<Sprite> textlist = new ArrayList<>();
         for(int i = 0; i < slotlist.size();i++) {
