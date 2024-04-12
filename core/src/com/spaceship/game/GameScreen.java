@@ -64,7 +64,7 @@ public class GameScreen implements Screen {
         double camdir = MovementMath.pointDir(cam.position, player.loadedrocket!=null ? player.loadedrocket.sprite.getPosition() : player.getPosition());
         Vector3 campos = lengthDir(camdir, camdis);
         cam.position.set(cam.position.x + campos.x * .05f, cam.position.y + campos.y * .05f, 0);
-        cam.zoom = 1.5f;
+        cam.zoom = player.loadedrocket!=null ? 1.5f : .75f;
 
         if(prevrot<-90&&player.gpulldir>90){
             camrot = (camrot+360+player.gpulldir)*0.5;
