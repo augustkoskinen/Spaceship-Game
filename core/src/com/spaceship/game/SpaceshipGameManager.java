@@ -53,6 +53,7 @@ public class SpaceshipGameManager extends Game {
 
 		//add a planet
 		new Planet(new Vector3(512,512,0),1);
+		new Planet(new Vector3(512,5120,0),1);
 
 		//set game screen
 		this.setScreen(new GameScreen(this));
@@ -537,6 +538,7 @@ public class SpaceshipGameManager extends Game {
 				//draw crafting gui
 				FrameworkMO.DrawMenuWithLayering(batch, SlotSprites, ItemSprites);
 
+				//draw mats needed
 				if(hovercraft!=null) {
 					batch.draw(new Texture("matmenu.png"),480,320,64,64);
 					for (int i = 0; i < hovercraft.MaterialList.get(0).size(); i++) {
