@@ -495,6 +495,7 @@ public class SpaceshipGameManager extends Game {
 				ArrayList<Sprite> SlotSprites = new ArrayList<>();
 				ArrayList<Sprite> ItemSprites = new ArrayList<>();
 
+				Item hovercraft = null;
 				//add crafting items for drawing gui
 				for(int i = 0; i < CraftList.size(); i++) {
 					float sc = (float)Math.abs((1+MovementMath.lengthDir((menuRot+90)+i*(360f/ CraftList.size()),MENU_HEIGHT/SCALE).y/(MENU_HEIGHT*SCALE)))*2;
@@ -502,7 +503,7 @@ public class SpaceshipGameManager extends Game {
 					float y = (float)(menu_y-MovementMath.lengthDir((menuRot+90)+i*(360f/ CraftList.size()),MENU_HEIGHT/2).y);  //x //+(32-(spr.getScaleY()*32)/2)
 					float a = (float)(1+(MovementMath.lengthDir((menuRot+90)+i*(360f/ CraftList.size()),MENU_HEIGHT/FADE).y/(MENU_HEIGHT*FADE)))/(2*(float)FADE);
 					boolean hover = false;
-					boolean craftable = canCraft(CraftList.get(i).type,false);
+					boolean craftable = canCraft(CraftList.get(i),false);
 
 					CraftList.get(i).sortPriority = (float)Math.abs((1+MovementMath.lengthDir((menuRot+90)+i*(360f/ CraftList.size()),MENU_HEIGHT/SCALE).y/(MENU_HEIGHT*SCALE)))*2;
 
@@ -512,8 +513,9 @@ public class SpaceshipGameManager extends Game {
 						Gdx.input.getX()<x+sc*16-24&&
 						Gdx.graphics.getHeight()-Gdx.input.getY()<y+sc*16-24
 					) {
+						hovercraft = CraftList.get(i);
 						hover = true;
-						if(mainplayer.justclicked&&canCraft(CraftList.get(i).type,true)) {
+						if(mainplayer.justclicked&&canCraft(CraftList.get(i),true)) {
 							mainplayer.justclicked = false;
 						}
 					}
@@ -534,6 +536,15 @@ public class SpaceshipGameManager extends Game {
 
 				//draw crafting gui
 				FrameworkMO.DrawMenuWithLayering(batch, SlotSprites, ItemSprites);
+
+				if(hovercraft!=null) {
+					batch.draw(new Texture("matmenu.png"),480,320,64,64);
+					for (int i = 0; i < hovercraft.MaterialList.get(0).size(); i++) {
+						batch.draw(new Texture("item/"+hovercraft.MaterialList.get(0).get(i)+".png"),484,364,16,16);
+						count.time = hovercraft.MaterialList.get(1).get(i);
+						batch.draw(count.getAnim(),494,368,16,16);
+					}
+				}
 
 				if(dragItem!=null) {
 					batch.draw(dragItem.text,Gdx.input.getX()-16,Gdx.graphics.getHeight() - Gdx.input.getY()-16);
@@ -657,19 +668,28 @@ public class SpaceshipGameManager extends Game {
 		}
 
 		//check if an item can be crafted
-		public boolean canCraft(int type, boolean craft) {
-			switch (type) {
-				case 1 : {
-					if (!rocketcrafted&&checkItem(0)>=16) {
-						if(craft) {
+		public boolean canCraft(Item item, boolean craft) {
+			if (!rocketcrafted&&item!=null) {
+				boolean havemats = true;
+				for (int i = 0; i < item.MaterialList.get(0).size(); i++) {
+					if(checkItem(item.MaterialList.get(0).get(i))<item.MaterialList.get(1).get(i)) {
+						havemats = false;
+					}
+				}
+
+				if(craft&&havemats) {
+					switch (item.type) {
+						case 1 : {
 							RocketList.add(new Rocket(mainplayer.getPosition(), mainplayer.gpulldir + 180));
 							rocketcrafted = true;
-							removeItem(0, 16);
+							break;
 						}
-						return true;
 					}
-					break;
+					for (int i = 0; i < item.MaterialList.get(0).size(); i++) {
+						removeItem(item.MaterialList.get(0).get(i), item.MaterialList.get(1).get(i));
+					}
 				}
+				return havemats;
 			}
 			return false;
 		}
@@ -683,14 +703,21 @@ public class SpaceshipGameManager extends Game {
 		public Vector3 gvect = new Vector3();
 		public double gvectdir = 0;
 
+		//needed vars
 		public int type;
 		public Texture text;
 		public boolean stackable;
 		public int amount = 1;
 
+		//lists
+		public ArrayList<ArrayList<Integer>> MaterialList = new ArrayList<>(); //0 = item, 1 = num
+
 		public double sortPriority = 0;
 		public Item(int t) {
 			type = t;
+			MaterialList.add(new ArrayList<Integer>());
+			MaterialList.add(new ArrayList<Integer>());
+
 			switch (type) {
 				case 0 : {
 					stackable = true;
@@ -698,6 +725,8 @@ public class SpaceshipGameManager extends Game {
 				}
 				case 1 : {
 					stackable = false;
+					MaterialList.get(0).add(0);
+					MaterialList.get(1).add(16);
 					break;
 				}
 			}
