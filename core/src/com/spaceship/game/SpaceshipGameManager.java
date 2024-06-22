@@ -12,7 +12,6 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
-import sun.jvm.hotspot.gc.shared.Space;
 
 import java.util.ArrayList;
 
@@ -76,6 +75,8 @@ public class SpaceshipGameManager extends Game {
 	public static class Player {
 		//basic vars
 		public FrameworkMO.SpriteObjectCirc sprite;
+		public FrameworkMO.AnimationSet spritelw;
+		public FrameworkMO.AnimationSet spriterw;
 		public double x = 0;
 		public double y = 0;
 		public int skintype = 1;
@@ -106,7 +107,11 @@ public class SpaceshipGameManager extends Game {
 			inventory = new Inventory();
 
 			//create body
-			sprite = new FrameworkMO.SpriteObjectCirc("p1body.png", pos.x, pos.y, 8, CollisionList);
+			//sprite = new FrameworkMO.SpriteObjectCirc("p1body.png", pos.x, pos.y, 8, CollisionList);
+
+			sprite = new FrameworkMO.SpriteObjectCirc("player/m.png", pos.x, pos.y, 8, CollisionList);
+			spritelw = new FrameworkMO.AnimationSet("player/lw.png", 4, 1, 0.15f);
+			spriterw = new FrameworkMO.AnimationSet("player/rw.png", 4, 1, 0.15f);
 
 			x = pos.x;
 			y = pos.y;
@@ -126,12 +131,12 @@ public class SpaceshipGameManager extends Game {
 
 			//setting up vars
 			TextureRegion playertext;
+			boolean running = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT);
 			int rightmove = Gdx.input.isKeyPressed(Input.Keys.D) ? 1 : 0;
 			int leftmove = Gdx.input.isKeyPressed(Input.Keys.A) ? 1 : 0;
 			int netmove = (rightmove-leftmove);
 			Circle playercol = MovementMath.DuplicateCirc(sprite.collision);
-			playertext = new TextureRegion(new Texture("p" + skintype + "body.png"));
-
+			playertext = new TextureRegion(new Texture("player/"+(movedir>0 ? "r" : "l")+".png"));
 			if (!pause&&loadedrocket==null) {
 				//update gravity vars
 				gpulldir = MovementMath.pointDir(sprite.getPosition(),SpaceMath.getClosestPlanet(sprite.getPosition(),PlanetList).getPosition());
@@ -142,8 +147,16 @@ public class SpaceshipGameManager extends Game {
 				//update walk velocity
 				if (netmove != 0) {
 					double movespeed = netmove * WALK_SPEED;
-					walkvect = new Vector3(walkvect.x+(MovementMath.lengthDir(gpulldir+90,movespeed).x),walkvect.y+(MovementMath.lengthDir(gpulldir+90,movespeed).y),0);
+					walkvect = new Vector3(walkvect.x+(MovementMath.lengthDir(gpulldir+90,movespeed*(running ? 1.5 : 1)).x),walkvect.y+(MovementMath.lengthDir(gpulldir+90,movespeed*(running ? 1.5 : 1)).y),0);
 					movedir = netmove;
+					if(netmove>0) {
+						playertext = spriterw.updateTime((running ? 1.5 : 1));
+					} else {
+						playertext = spritelw.updateTime((running ? 1.5 : 1));
+					}
+				} else {
+					spriterw.time = 0;
+					spritelw.time = 0;
 				}
 
 				//check if player is grounded/allowed to jump
@@ -289,17 +302,6 @@ public class SpaceshipGameManager extends Game {
 		public final double MENU_WIDTH = 256;
 		public final double MENU_HEIGHT = 32;
 		public Inventory() {
-			CraftList.add(new Item(1));
-			CraftList.add(new Item(1));
-			CraftList.add(new Item(1));
-			CraftList.add(new Item(1));
-			CraftList.add(new Item(1));
-			CraftList.add(new Item(1));
-			CraftList.add(new Item(1));
-			CraftList.add(new Item(1));
-			CraftList.add(new Item(1));
-			CraftList.add(new Item(1));
-			CraftList.add(new Item(1));
 			CraftList.add(new Item(1));
 
 			//textures

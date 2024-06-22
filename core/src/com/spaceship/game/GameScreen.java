@@ -141,9 +141,9 @@ public class GameScreen implements Screen {
         //draw player
         TextureRegion playertext = player.updatePlayerPos();
         if(playertext!=null) {
-            batch.draw(playertext, (float) (player.sprite.x - player.sprite.collision.radius), (float) (player.sprite.y - player.sprite.collision.radius), playertext.getRegionWidth() / 2, playertext.getRegionHeight() / 2, playertext.getRegionWidth(), playertext.getRegionHeight(), 1, 1, (float) player.moverot);
-            FrameworkMO.TextureSet eyetext = player.getEyeText();
-            batch.draw(eyetext.texture, (float) (eyetext.x - eyetext.texture.getRegionWidth() / 2), (float) (eyetext.y - eyetext.texture.getRegionWidth() / 2), eyetext.texture.getRegionWidth() / 2, eyetext.texture.getRegionHeight() / 2, eyetext.texture.getRegionWidth(), eyetext.texture.getRegionHeight(), 1, 1, (float) eyetext.rotation);
+            batch.draw(playertext, (float) (player.sprite.x - player.sprite.collision.radius), (float) (player.sprite.y - player.sprite.collision.radius), playertext.getRegionWidth() / 2, playertext.getRegionHeight() / 2, playertext.getRegionWidth(), playertext.getRegionHeight(), 1, 1, (int)(player.gpulldir+90));
+            //FrameworkMO.TextureSet eyetext = player.getEyeText();
+            //batch.draw(eyetext.texture, (float) (eyetext.x - eyetext.texture.getRegionWidth() / 2), (float) (eyetext.y - eyetext.texture.getRegionWidth() / 2), eyetext.texture.getRegionWidth() / 2, eyetext.texture.getRegionHeight() / 2, eyetext.texture.getRegionWidth(), eyetext.texture.getRegionHeight(), 1, 1, (float) eyetext.rotation);
         }
 
         //draw items on the ground

@@ -14,9 +14,11 @@ public class SpaceMath {
     }
 
     //get speed required to orbit an object of m mass at d distance away
+    /*
     public static double getOrbitalSpeed(double m, double d){
         return Math.sqrt((GRAVITATIONAL_CONSTANT*m)/d);
     }
+    */
 
     //get the net gravitational pull on an object by a list of planets
     public static Vector3 getNetGravity(Vector3 ppos, ArrayList<SpaceshipGameManager.Planet> plist, double objmass){
